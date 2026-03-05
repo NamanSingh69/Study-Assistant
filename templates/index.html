@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Study Assistant</title>
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Google Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- jsPDF and html2canvas for PDF export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- MathJax for LaTeX -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+            tex2jax: {
+                inlineMath: [['$','$'], ['\\(','\\)']],
+                displayMath: [['$$','$$'], ['\\[','\\]']],
+                processEscapes: true,
+                skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            },
+            messageStyle: "none"
+        });
+        MathJax.Hub.Register.StartupHook("HTML-CSS Jax Ready", function () {
+            var VARIANT = MathJax.OutputJax["HTML-CSS"].FONTDATA.VARIANT;
+            VARIANT["normal"].fonts.unshift("MathJax_SansSerif");
+            VARIANT["bold"].fonts.unshift("MathJax_SansSerif-bold");
+            VARIANT["italic"].fonts.unshift("MathJax_SansSerif-italic");
+            VARIANT["-tex-mathit"].fonts.unshift("MathJax_SansSerif-italic");
+        });
+        MathJax.Hub.Register.StartupHook("SVG Jax Ready", function () {
+            var VARIANT = MathJax.OutputJax.SVG.FONTDATA.VARIANT;
+            VARIANT["normal"].fonts.unshift("MathJax_SansSerif");
+            VARIANT["bold"].fonts.unshift("MathJax_SansSerif-bold");
+            VARIANT["italic"].fonts.unshift("MathJax_SansSerif-italic");
+            VARIANT["-tex-mathit"].fonts.unshift("MathJax_SansSerif-italic");
+        });
+    </script>
+    <!-- Mermaid.js for Mind Maps -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    
+    <!-- jsPlumb for alternative mind map rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsPlumb/2.15.6/js/jsplumb.min.js"></script>
+    
+    <!-- Cytoscape.js for graph visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.25.0/cytoscape.min.js"></script>
+
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans flex min-h-screen">
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="fixed top-0 left-0 h-full bg-gray-800 shadow-xl transition-all duration-300 ease-in-out z-50 flex flex-col" style="width: 280px;">
+        <!-- Logo/Header (MODIFIED) -->
+        <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <!-- Desktop Collapse Button (Already Moved) -->
+            <button id="collapse-sidebar-desktop" class="hidden md:flex px-2 py-1 rounded-lg text-gray-400 hover:bg-gray-700 hover:text-white items-center justify-center focus:outline-none">
+                <span id="collapse-icon" class="material-icons-round">chevron_left</span>
+                <span id="expand-icon" class="material-icons-round hidden">chevron_right</span>
+            </button>
+
+            <!-- Mobile Toggle Button (Keep) -->
+            <button id="toggle-sidebar" class="text-gray-400 hover:text-white focus:outline-none md:hidden">
+                <span class="material-icons-round">menu</span>
+            </button>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-grow p-4 space-y-1 overflow-y-auto">
+            <button data-view="input-view" class="sidebar-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 flex items-center active-link">
+                <span class="material-icons-round mr-3">upload_file</span>
+                <span>Input Content</span>
+            </button>
+            <button data-view="notes-view" class="sidebar-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 flex items-center disabled-link" disabled>
+                <span class="material-icons-round mr-3">description</span>
+                <span>Notes</span>
+            </button>
+            <button data-view="mindmap-view" class="sidebar-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 flex items-center disabled-link" disabled>
+                <span class="material-icons-round mr-3">account_tree</span>
+                <span>Mind Map</span>
+            </button>
+            <button data-view="quiz-view" class="sidebar-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 flex items-center disabled-link" disabled>
+                <span class="material-icons-round mr-3">quiz</span>
+                <span>Quiz</span>
+            </button>
+            <button data-view="flashcards-view" class="sidebar-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 flex items-center disabled-link" disabled>
+                <span class="material-icons-round mr-3">style</span>
+                <span>Flashcards</span>
+            </button>
+            <button data-view="chat-view" class="sidebar-link w-full text-left px-4 py-3 rounded-lg hover:bg-gray-700 flex items-center disabled-link" disabled>
+                <span class="material-icons-round mr-3">chat</span>
+                <span>Chat</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="main-content" class="flex-1 transition-all duration-300 ease-in-out overflow-y-auto" style="margin-left: 280px;">
+        <!-- ADDED Top Header Bar -->
+        <div class="bg-gray-800 py-3 shadow-md sticky top-0 z-30"> <!-- Added sticky and z-index -->
+            <h1 class="text-xl font-semibold text-white text-center">Study Assistant</h1>
+        </div>
+
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8"> <!-- Original container -->
+
+            <!-- Global Loading Indicator -->
+            <div id="loading-indicator" class="fixed inset-0 pointer-events-none z-60 hidden"> <!-- Outer container, no background/flex -->
+                 <!-- Top Progress Bar -->
+                 <div id="loading-progress-bar-container" style="display: none;" class="fixed top-0 left-0 w-full h-1 overflow-hidden bg-blue-900/30 z-61"> <!-- Added bg for track -->
+                     <div id="loading-progress-bar" class="h-full bg-blue-500 indeterminate-progress"></div>
+                 </div>
+                 <!-- Bottom Right Text -->
+                 <div id="loading-text-corner" style="display: none;" class="fixed bottom-4 right-4 px-3 py-1 bg-gray-800 bg-opacity-90 text-white text-sm rounded shadow-lg z-61">
+                     Processing...
+                 </div>
+            </div>
+
+            <!-- Dynamic View Container -->
+            <div id="view-container">
+                <!-- 1. Input Content View -->
+                <div id="input-view" class="view active-view">
+                    <div class="flex items-center mb-6">
+                        <span class="material-icons-round text-blue-400 mr-3 text-3xl">input</span>
+                        <h1 class="text-3xl font-bold text-gray-100">Input Your Material</h1>
+                    </div>
+                    <div class="card">
+                        <!-- Combined Input Section -->
+                        <div class="mb-8 border-b border-gray-700 pb-8">
+                            <div class="flex items-center mb-4">
+                                <span class="material-icons-round text-blue-400 mr-2">source</span>
+                                <h2 class="text-xl font-semibold text-gray-100">Provide Content & Context</h2>
+                            </div>
+                            <p class="text-sm text-gray-400 mb-6">
+                                You can provide content in multiple ways. Add URLs or upload files for direct content extraction. You can also (or additionally) provide a topic and description to guide the AI. Combining sources and descriptions often yields the best results.
+                            </p>
+
+                            <!-- URLs -->
+                            <div class="mb-6">
+                                <label for="urls-input" class="input-label">Website/YouTube URLs (Optional, one per line)</label>
+                                <textarea id="urls-input" placeholder="Enter YouTube or website URLs here..." rows="3" class="input-field"></textarea>
+                            </div>
+
+                            <!-- File Upload -->
+                            <div class="mb-6">
+                                <label class="input-label">Upload Files (Optional, PDF, Audio, Video, Images, Text)</label>
+                                <div id="drag-drop-area" class="drag-drop-zone">
+                                    <span class="material-icons-round text-gray-400 text-4xl mb-2">cloud_upload</span>
+                                    <p class="text-center text-sm">Drag & drop files here or</p>
+                                    <label for="files-input" class="btn-secondary mt-2">
+                                        <span id="file-input-label">Browse Files</span>
+                                        <input type="file" id="files-input" multiple accept=".pdf,.mp3,.wav,.ogg,.flac,.mp4,.avi,.mov,.mpeg,.jpg,.jpeg,.png,.webp,.txt,.md,.doc,.docx,.ppt,.pptx" class="hidden">
+                                    </label>
+                                </div>
+                                <div id="selected-files" class="mt-3 space-y-2 text-sm"></div>
+                            </div>
+
+                            <!-- Topic -->
+                            <div class="mb-6">
+                                <label for="topic-input" class="input-label">Main Topic (Optional)</label>
+                                <input type="text" id="topic-input" placeholder="e.g., Quantum Physics Basics, History of Ancient Rome" class="input-field">
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="description-input" class="input-label">Specific Focus or Instructions (Optional)</label>
+                                <textarea id="description-input" placeholder="e.g., Focus on the Schrödinger equation, explain the fall of the Republic, summarize key arguments..." rows="3" class="input-field"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Processing Options -->
+                        <div>
+                            <div class="flex items-center mb-4">
+                                <span class="material-icons-round text-blue-400 mr-2">settings</span>
+                                <h2 class="text-xl font-semibold text-gray-100">Options</h2>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="web-search-toggle" checked class="form-checkbox h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-400 focus:ring-opacity-50">
+                                    <label for="web-search-toggle" class="ml-2 text-gray-300">Enable Web Search (Enhance context)</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="generate-quiz-toggle" checked class="form-checkbox h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-400 focus:ring-opacity-50">
+                                    <label for="generate-quiz-toggle" class="ml-2 text-gray-300">Generate Quiz Immediately</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="generate-flashcards-toggle" checked class="form-checkbox h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-400 focus:ring-opacity-50">
+                                    <label for="generate-flashcards-toggle" class="ml-2 text-gray-300">Generate Flashcards Immediately</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="generate-mindmap-toggle" checked class="form-checkbox h-5 w-5 text-blue-500 bg-gray-700 border-gray-600 rounded focus:ring-blue-400 focus:ring-opacity-50">
+                                    <label for="generate-mindmap-toggle" class="ml-2 text-gray-300">Generate Mind Map Immediately</label>
+                                </div>
+                            </div>
+                            <button id="process-content-btn" class="btn-primary" disabled>
+                                <span class="material-icons-round mr-2">auto_awesome</span>
+                                Process Content & Generate Notes
+                            </button>
+                        </div>
+                        <!-- Processing Warnings/Errors (Remains the same) -->
+                        <div id="processing-warnings" class="mt-6 p-4 rounded-lg bg-yellow-900 border border-yellow-700 text-yellow-200 hidden">
+                            <div class="flex items-start">
+                                <span class="material-icons-round mr-2 mt-0.5">warning</span>
+                                <div></div> <!-- Content injected here -->
+                            </div>
+                        </div>
+                        <div id="processing-errors" class="mt-6 p-4 rounded-lg bg-red-900 border border-red-700 text-red-200 hidden">
+                            <div class="flex items-start">
+                                <span class="material-icons-round mr-2 mt-0.5">error</span>
+                                <div></div> <!-- Content injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Notes View -->
+                <div id="notes-view" class="view hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">description</span>
+                            <h1 id="notes-title" class="text-3xl font-bold text-gray-100">Study Notes</h1>
+                        </div>
+                        <div class="flex">
+                            <select id="download-format" class="select-field mr-2">
+                                <option value="md">Markdown (.md)</option>
+                                <option value="txt">Plain Text (.txt)</option>
+                                <option value="html">HTML (.html)</option>
+                                <option value="pdf">PDF (.pdf)</option>
+                            </select>
+                            <button id="download-notes-btn" class="btn-secondary">
+                                <span class="material-icons-round mr-1">download</span>
+                                Download
+                            </button>
+                        </div>
+                    </div>
+                    <div id="notes-content" class="card prose prose-invert max-w-none academic-technical-style">
+                        <p class="text-gray-500 italic">Notes will appear here once generated.</p>
+                    </div>
+                    <!-- Original Content Toggle -->
+                    <div class="mt-6 card">
+                        <button id="toggle-original-content" class="btn-text flex items-center">
+                            <span class="material-icons-round mr-1 text-blue-400">visibility</span>
+                            Show Original Content
+                        </button>
+                        <div id="original-content-container" class="hidden mt-4 max-h-96 overflow-y-auto text-sm text-gray-400 border-t border-gray-700 pt-4">
+                            <pre class="whitespace-pre-wrap break-words"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Quiz View -->
+                <div id="quiz-view" class="view hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">quiz</span>
+                            <h1 class="text-3xl font-bold text-gray-100">Knowledge Quiz</h1>
+                        </div>
+                        <button id="generate-more-questions-btn" class="btn-secondary">
+                            <span class="material-icons-round mr-1">add</span>
+                            Generate More Questions
+                        </button>
+                    </div>
+                    <!-- Quiz Generation Options -->
+                    <div id="quiz-options" class="card mb-6 hidden">
+                        <label class="input-label">Select question types for next batch:</label>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-4">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="quiz_type" value="MCQ" checked class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                <span class="ml-2">Multiple Choice</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="quiz_type" value="True/False" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                <span class="ml-2">True/False</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="quiz_type" value="Fill_in_the_Blank" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                <span class="ml-2">Fill in the Blank</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="quiz_type" value="Matching" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                <span class="ml-2">Matching</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="quiz_type" value="Short_Answer" class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                <span class="ml-2">Short Answer</span>
+                            </label>
+                        </div>
+                        <div class="mb-4">
+                            <label for="quiz-difficulty-select" class="input-label">Question Difficulty (Bloom's Taxonomy):</label>
+                            <select id="quiz-difficulty-select" class="select-field w-full md:w-auto">
+                                <option value="Remember">Remember (Recall facts)</option>
+                                <option value="Understand">Understand (Explain concepts)</option>
+                                <option value="Apply" selected>Apply (Use info in new situations)</option>
+                                <option value="Analyze">Analyze (Break down info)</option>
+                                <option value="Evaluate">Evaluate (Judge, critique)</option>
+                                <option value="Create">Create (Produce new work)</option>
+                            </select>
+                        </div>
+                        <div class="flex items-center">
+                            <label for="num-questions-input" class="input-label mr-2">Number of Questions:</label>
+                            <input type="number" id="num-questions-input" value="5" min="1" max="15" class="input-field-small w-20">
+                            <button id="apply-quiz-options" class="btn-primary ml-4">
+                                <span class="material-icons-round mr-1">check</span>
+                                Apply
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="quiz-content" class="space-y-6">
+                        <p class="text-gray-500 italic text-center py-10">Quiz questions will appear here once generated.</p>
+                    </div>
+                    <div id="quiz-actions" class="mt-6 flex justify-between items-center hidden">
+                        <button id="submit-quiz-btn" class="btn-primary" disabled>
+                            <span class="material-icons-round mr-1">check_circle</span>
+                            Submit Answers
+                        </button>
+                        <div id="quiz-results-summary" class="text-lg font-semibold"></div>
+                    </div>
+                </div>
+
+                <!-- 4. Flashcards View -->
+                <div id="flashcards-view" class="view hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">style</span>
+                            <h1 class="text-3xl font-bold text-gray-100">Flashcards</h1>
+                        </div>
+                        <button id="generate-more-flashcards-btn" class="btn-secondary">
+                            <span class="material-icons-round mr-1">add</span>
+                            Generate More Flashcards
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div id="flashcards-display-area" class="hidden">
+                            <div class="flashcard-container relative mx-auto" style="height: 300px; max-width: 600px;">
+                                <div id="flashcard" class="flashcard w-full h-full">
+                                    <div id="flashcard-front" class="flashcard-face flashcard-front"></div>
+                                    <div id="flashcard-back" class="flashcard-face flashcard-back"></div>
+                                </div>
+                            </div>
+                            <div class="flex justify-center items-center gap-6 mt-8">
+                                <button id="prev-card-btn" class="btn-icon" disabled>
+                                    <span class="material-icons-round">arrow_back</span>
+                                </button>
+                                <button id="flip-card-btn" class="btn-primary">
+                                    <span class="material-icons-round mr-1">flip</span>
+                                    Flip Card
+                                </button>
+                                <button id="next-card-btn" class="btn-icon" disabled>
+                                    <span class="material-icons-round">arrow_forward</span>
+                                </button>
+                            </div>
+                            <div id="card-counter" class="text-center mt-4 text-gray-400 text-sm"></div>
+                        </div>
+                        <div id="no-flashcards-message" class="py-16 text-center">
+                            <span class="material-icons-round text-gray-500 text-5xl mb-4">style</span>
+                            <p class="text-gray-500 italic">Flashcards will appear here once generated.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Mind Map View -->
+                <div id="mindmap-view" class="view hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center">
+                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">account_tree</span>
+                            <h1 class="text-3xl font-bold text-gray-100">Mind Map</h1>
+                        </div>
+                        <div class="flex space-x-2"> <!-- Added flex container for buttons -->
+                            <button id="mindmap-fullscreen-btn" class="btn-secondary" title="View Fullscreen">
+                                <span class="material-icons-round">fullscreen</span>
+                            </button>
+                            <button id="generate-mindmap-btn" class="btn-secondary">
+                                <span class="material-icons-round mr-1">auto_awesome</span>
+                                Generate Mind Map
+                            </button>
+                        </div>
+                    </div>
+                    <div id="mindmap-card" class="card flex flex-col relative">
+                         <!-- Exit Fullscreen Button (positioned absolutely) -->
+                        <button id="mindmap-exit-fullscreen-btn" class="btn-secondary absolute top-4 right-4 z-20 hidden" title="Exit Fullscreen">
+                            <span class="material-icons-round">fullscreen_exit</span>
+                        </button>
+                        <!-- Mindmap Container -->
+                        <div id="mindmap-container" class="flex-grow flex justify-center items-center overflow-auto p-4 min-h-[600px]"> <!-- Added min-height here instead -->
+                            <div class="text-center">
+                                <span class="material-icons-round text-gray-500 text-5xl mb-4">account_tree</span>
+                                <p id="mindmap-placeholder" class="text-gray-500 italic">Mind map will appear here once generated.</p>
+                            </div>
+                        </div>
+                        <div id="mindmap-error" class="mt-4 p-4 rounded-lg bg-red-900 border border-red-700 text-red-200 hidden">
+                            <div class="flex items-start">
+                                <span class="material-icons-round mr-2">error</span>
+                                <div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. Chat View -->
+                <div id="chat-view" class="view hidden">
+                    <div class="flex items-center mb-6">
+                        <span class="material-icons-round text-blue-400 mr-3 text-3xl">chat</span>
+                        <h1 class="text-3xl font-bold text-gray-100">Chat with Your Content</h1>
+                    </div>
+                    <div class="card">
+                        <div id="chat-history" class="mb-4 h-96 overflow-y-auto border border-gray-700 rounded-lg bg-gray-800 p-4 text-sm space-y-4">
+                            <div class="text-center py-16">
+                                <span class="material-icons-round text-gray-500 text-5xl mb-4">chat</span>
+                                <p class="text-gray-500 italic">Chat history will appear here.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 border-t border-gray-700 pt-4">
+                            <textarea id="chat-input" placeholder="Ask a question about the content..." rows="2" class="chat-input"></textarea>
+                            <button id="send-message-btn" class="btn-send">
+                                <span class="material-icons-round">send</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Pass backend flags/data to JS if needed
+        // const API_KEY_SET = {{ api_key_set | tojson }};
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
