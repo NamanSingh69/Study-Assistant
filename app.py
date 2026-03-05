@@ -1,20 +1,25 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 import os
 import tempfile 
 import pathlib 
 import google.generativeai as genai
 import json
 import uuid
-from datetime import datetime
-import requests
 import time
+import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
 import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 import re
-import tempfile
+from werkzeug.utils import secure_filename
+from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript, FetchedTranscript
+from pydantic import ValidationError
+from schemas import (
+    GenerateQuizzesRequest, GenerateFlashcardsRequest, GenerateMindmapRequest, 
+    ChatRequest, EvaluateAnswerRequest
+)
 from werkzeug.utils import secure_filename
 import pathlib 
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript, FetchedTranscript
@@ -1607,11 +1612,10 @@ Generate ONLY the valid Mermaid syntax based on the context provided above.
         return {"error": f"Failed to generate mind map: {str(e)}"}
 
 # --- API Routes (Stateless) ---
-@app.route('/')
-def index():
-    # Pass API Key status to template (optional, for client-side checks/warnings)
-    api_key_set = bool(os.environ.get("GOOGLE_API_KEY"))
-    return render_template('index.html', api_key_set=api_key_set)
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "healthy", "service": "Study Assistant API"})
+
 
 @app.route('/api/process-content', methods=['POST'])
 def process_content_route():
@@ -1792,32 +1796,21 @@ def process_content_route():
 @app.route('/api/generate-quizzes', methods=['POST'])
 def generate_quizzes_route():
     print("Received /api/generate-quizzes request")
-    data = request.json
-    notes = data.get('notes')
-    original_text = data.get('original_text')
-    # Existing questions are less relevant if replacing, but backend handles it
-    existing_questions = data.get('existing_questions', '[]')
-    question_types = data.get('question_types', ["MCQ"])
-    num_questions = data.get('num_questions', 5)
-    difficulty = data.get('difficulty', 'Apply') # Get difficulty level
+    try:
+        data = GenerateQuizzesRequest(**request.json)
+    except ValidationError as e:
+        return jsonify({"error": "Invalid request payload", "details": e.errors()}), 400
 
-    if not notes and not original_text:
+    if not data.notes and not data.original_text:
         return jsonify({"error": "Missing notes or original_text"}), 400
-    if not isinstance(question_types, list) or not question_types:
-         return jsonify({"error": "Invalid or missing question_types list"}), 400
-    if difficulty not in ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"]:
-         print(f"Warning: Invalid difficulty '{difficulty}' received, defaulting to Apply.")
-         difficulty = "Apply"
 
-    # Pass the difficulty to the generation function
-    result = generate_quizzes(notes, original_text, existing_questions, question_types, num_questions, difficulty)
+    result = generate_quizzes(data.notes, data.original_text, data.existing_questions, data.question_types, data.num_questions, data.difficulty)
     if 'error' in result:
-        # Return 500 for server-side errors, 400 for specific known issues like safety blocks
         status_code = 500
         if "safety" in result.get("error", "").lower() or "prompt block" in result.get("error", "").lower():
             status_code = 400
         elif "parse quiz json" in result.get("error","").lower() or "incorrect structure" in result.get("error","").lower():
-            status_code = 500 # Internal error likely from LLM structure
+            status_code = 500
         return jsonify(result), status_code
     print("Quiz generation successful.")
     return jsonify(result), 200
@@ -1825,16 +1818,15 @@ def generate_quizzes_route():
 @app.route('/api/generate-flashcards', methods=['POST'])
 def generate_flashcards_route():
     print("Received /api/generate-flashcards request")
-    data = request.json
-    notes = data.get('notes')
-    original_text = data.get('original_text')
-    existing_flashcards = data.get('existing_flashcards', '[]') # Pass as JSON string
-    num_flashcards = data.get('num_flashcards', 10)
+    try:
+        data = GenerateFlashcardsRequest(**request.json)
+    except ValidationError as e:
+        return jsonify({"error": "Invalid request payload", "details": e.errors()}), 400
 
-    if not notes and not original_text:
+    if not data.notes and not data.original_text:
         return jsonify({"error": "Missing notes or original_text"}), 400
 
-    result = generate_flashcards(notes, original_text, existing_flashcards, num_flashcards)
+    result = generate_flashcards(data.notes, data.original_text, data.existing_flashcards, data.num_flashcards)
     if 'error' in result:
         return jsonify(result), 500
     print("Flashcard generation successful.")
@@ -1843,14 +1835,15 @@ def generate_flashcards_route():
 @app.route('/api/generate-mindmap', methods=['POST'])
 def generate_mindmap_route():
     print("Received /api/generate-mindmap request")
-    data = request.json
-    notes = data.get('notes')
-    original_text = data.get('original_text')
+    try:
+        data = GenerateMindmapRequest(**request.json)
+    except ValidationError as e:
+        return jsonify({"error": "Invalid request payload", "details": e.errors()}), 400
 
-    if not notes and not original_text:
+    if not data.notes and not data.original_text:
         return jsonify({"error": "Missing notes or original_text"}), 400
 
-    result = generate_mindmap_data(notes, original_text)
+    result = generate_mindmap_data(data.notes, data.original_text)
     if 'error' in result:
         return jsonify(result), 500
     print("Mind map generation successful.")
@@ -1862,19 +1855,15 @@ def generate_mindmap_route():
 @app.route('/api/chat', methods=['POST'])
 def chat_route():
     print("Received /api/chat request")
-    data = request.json
-    notes = data.get('notes')
-    original_text = data.get('original_text')
-    history = data.get('history', []) # Expecting list of {"role": ..., "parts": ...}
-    message = data.get('message')
-    web_search_enabled = data.get('web_search_enabled', False) # Get flag from client state
+    try:
+        data = ChatRequest(**request.json)
+    except ValidationError as e:
+        return jsonify({"error": "Invalid request payload", "details": e.errors()}), 400
 
-    if not message:
-        return jsonify({"error": "No message provided"}), 400
-    if not notes and not original_text:
+    if not data.notes and not data.original_text:
         return jsonify({"error": "Missing context (notes or original_text) for chat"}), 400
 
-    result = chat_with_content(notes, original_text, history, message, web_search_enabled)
+    result = chat_with_content(data.notes, data.original_text, data.history, data.message, data.web_search_enabled)
     if 'error' in result:
         return jsonify(result), 500
     print("Chat response generated.")
@@ -1886,16 +1875,12 @@ def chat_route():
 @app.route('/api/evaluate-answer', methods=['POST'])
 def evaluate_answer_route():
     print("Received /api/evaluate-answer request")
-    data = request.json
-    question = data.get('question')
-    ideal_answer = data.get('ideal_answer')
-    user_answer = data.get('user_answer')
-    notes_context = data.get('notes_context') # Pass relevant notes snippet
+    try:
+        data = EvaluateAnswerRequest(**request.json)
+    except ValidationError as e:
+        return jsonify({"error": "Invalid request payload", "details": e.errors()}), 400
 
-    if not all([question, ideal_answer, user_answer is not None, notes_context]):
-        return jsonify({"error": "Missing required parameters for evaluation"}), 400
-
-    result = evaluate_subjective_answer(question, ideal_answer, user_answer, notes_context)
+    result = evaluate_subjective_answer(data.question, data.ideal_answer, data.user_answer, data.notes_context)
     if 'error' in result:
         return jsonify(result), 500
     print("Subjective answer evaluation successful.")
