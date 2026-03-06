@@ -23,10 +23,12 @@ from schemas import (
 from werkzeug.utils import secure_filename
 import pathlib 
 from youtube_transcript_api import YouTubeTranscriptApi, TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript, FetchedTranscript
+from flask_cors import CORS
 
 # --- Basic App Configuration ---
 def init_app():
     app = Flask(__name__, static_folder='static', template_folder='templates')
+    CORS(app)
     app.secret_key = os.urandom(24)
     # Removed DB config, upload folder (using Gemini directly)
     return app
