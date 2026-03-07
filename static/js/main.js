@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         const savedPreferences = localStorage.getItem('studyAssistantPreferences');
         if (savedPreferences) {
-            appState.preferences = {...appState.preferences, ...JSON.parse(savedPreferences)};
+            appState.preferences = { ...appState.preferences, ...JSON.parse(savedPreferences) };
             console.log("Loaded saved preferences:", appState.preferences);
         }
     } catch (e) {
@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     appState.librariesLoaded.mermaid = false;
                 }
             } else {
-                 appState.librariesLoaded.mermaid = false; // Ensure it's marked false if load fails
+                appState.librariesLoaded.mermaid = false; // Ensure it's marked false if load fails
             }
 
             // Load jsPlumb without integrity check
@@ -210,15 +210,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Optional: Re-render or fit the diagram after a short delay
         // to allow CSS transitions to complete and container to resize.
         setTimeout(() => {
-             const cytoscapeInstance = window.cytoscape && mindmapContainer.querySelector('#cytoscape-canvas') ? window.cytoscape.instance(mindmapContainer.querySelector('#cytoscape-canvas')) : null;
-             if (cytoscapeInstance) {
-                 cytoscapeInstance.resize();
-                 cytoscapeInstance.fit(null, 30); // Refit with padding
-             } else if (mindmapContainer.querySelector('.mermaid svg')) {
-                 // For Mermaid, resizing is often handled by CSS, but might need trigger if complex
-                 // No standard API call to force reflow easily. The SVG should adapt.
-             }
-             console.log("Resized/refit mindmap for fullscreen.");
+            const cytoscapeInstance = window.cytoscape && mindmapContainer.querySelector('#cytoscape-canvas') ? window.cytoscape.instance(mindmapContainer.querySelector('#cytoscape-canvas')) : null;
+            if (cytoscapeInstance) {
+                cytoscapeInstance.resize();
+                cytoscapeInstance.fit(null, 30); // Refit with padding
+            } else if (mindmapContainer.querySelector('.mermaid svg')) {
+                // For Mermaid, resizing is often handled by CSS, but might need trigger if complex
+                // No standard API call to force reflow easily. The SVG should adapt.
+            }
+            console.log("Resized/refit mindmap for fullscreen.");
         }, 350); // Delay matches CSS transition duration roughly
     }
 
@@ -230,12 +230,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Optional: Re-render or fit diagram again after exiting
         setTimeout(() => {
-             const cytoscapeInstance = window.cytoscape && mindmapContainer.querySelector('#cytoscape-canvas') ? window.cytoscape.instance(mindmapContainer.querySelector('#cytoscape-canvas')) : null;
-             if (cytoscapeInstance) {
-                 cytoscapeInstance.resize();
-                 cytoscapeInstance.fit(null, 30);
-             }
-             console.log("Resized/refit mindmap after exiting fullscreen.");
+            const cytoscapeInstance = window.cytoscape && mindmapContainer.querySelector('#cytoscape-canvas') ? window.cytoscape.instance(mindmapContainer.querySelector('#cytoscape-canvas')) : null;
+            if (cytoscapeInstance) {
+                cytoscapeInstance.resize();
+                cytoscapeInstance.fit(null, 30);
+            }
+            console.log("Resized/refit mindmap after exiting fullscreen.");
         }, 350);
     }
 
@@ -306,8 +306,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const textCorner = document.getElementById('loading-text-corner');
 
         if (!indicatorContainer || !progressBarContainer || !textCorner) {
-             console.error("Loading indicator elements not found!");
-             return;
+            console.error("Loading indicator elements not found!");
+            return;
         }
 
         if (isLoading) {
@@ -318,13 +318,13 @@ document.addEventListener('DOMContentLoaded', () => {
             progressBarContainer.style.display = 'block';
             textCorner.style.display = 'block';
             // Force repaint/reflow might be needed for smooth animation start in some browsers
-             void progressBarContainer.offsetWidth;
+            void progressBarContainer.offsetWidth;
         } else {
             // Hide the specific elements first
             progressBarContainer.style.display = 'none';
             textCorner.style.display = 'none';
             // Then hide the main container
-             indicatorContainer.classList.add('hidden');
+            indicatorContainer.classList.add('hidden');
         }
     }
 
@@ -394,7 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn("Attempted to render mind map, but container is missing.");
             return;
         }
-    
+
         // If no syntax exists, show the "Generate" placeholder
         if (!appState.mindMapSyntax) {
             console.log("No mind map syntax found, showing generation placeholder.");
@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return;
         }
-    
+
         // Show loading state specifically for rendering
         mindmapContainer.innerHTML = `
             <div class="text-center p-6">
@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p class="text-gray-400">Preparing mind map visualization...</p>
             </div>
         `;
-    
+
         // Load libraries if needed, and ALWAYS use the callback to render
         // This ensures libraries are loaded *before* render attempt.
         loadMindMapLibraries(() => {
@@ -593,7 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
             marked.setOptions({
                 gfm: true,
                 breaks: true, // Render line breaks as <br>
-                highlight: function(code, lang) {
+                highlight: function (code, lang) {
                     const language = lang || 'plaintext';
                     // Ensure proper escaping within the code block
                     return `<pre><code class="language-${escapeHtml(language)}">${escapeHtml(code)}</code></pre>`;
@@ -648,15 +648,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const mermaidPlaceholders = element.querySelectorAll('.mermaid-placeholder');
             if (mermaidPlaceholders.length > 0 && window.mermaid) {
                 mermaidPlaceholders.forEach(placeholderPre => {
-                     const index = parseInt(placeholderPre.dataset.mermaidIndex);
-                     const mermaidSyntax = mermaidBlocks[index];
-                     if (mermaidSyntax) {
-                         // Replace placeholder text with actual syntax inside a div with class="mermaid"
-                         const mermaidDiv = document.createElement('div');
-                         mermaidDiv.className = 'mermaid';
-                         mermaidDiv.textContent = mermaidSyntax; // Put syntax here for mermaid.run()
-                         placeholderPre.parentNode.replaceChild(mermaidDiv, placeholderPre);
-                     }
+                    const index = parseInt(placeholderPre.dataset.mermaidIndex);
+                    const mermaidSyntax = mermaidBlocks[index];
+                    if (mermaidSyntax) {
+                        // Replace placeholder text with actual syntax inside a div with class="mermaid"
+                        const mermaidDiv = document.createElement('div');
+                        mermaidDiv.className = 'mermaid';
+                        mermaidDiv.textContent = mermaidSyntax; // Put syntax here for mermaid.run()
+                        placeholderPre.parentNode.replaceChild(mermaidDiv, placeholderPre);
+                    }
                 });
 
                 // Call mermaid.run() once after replacing all placeholders
@@ -665,16 +665,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     mermaid.run({
                         nodes: element.querySelectorAll('.mermaid') // Target only within the current element
                     }).catch(err => {
-                         console.error("Error running mermaid.run():", err);
-                         // Optionally replace failed diagrams with error message
-                         element.querySelectorAll('.mermaid').forEach(div => {
-                             if (!div.querySelector('svg')) { // Check if rendering didn't happen
-                                 div.innerHTML = `<pre class="text-red-500 p-2 bg-gray-800 rounded">Error rendering diagram: ${err.message || err}</pre>`;
-                             }
-                         });
+                        console.error("Error running mermaid.run():", err);
+                        // Optionally replace failed diagrams with error message
+                        element.querySelectorAll('.mermaid').forEach(div => {
+                            if (!div.querySelector('svg')) { // Check if rendering didn't happen
+                                div.innerHTML = `<pre class="text-red-500 p-2 bg-gray-800 rounded">Error rendering diagram: ${err.message || err}</pre>`;
+                            }
+                        });
                     });
                 } catch (runError) {
-                     console.error("Error calling mermaid.run():", runError);
+                    console.error("Error calling mermaid.run():", runError);
                 }
             }
 
@@ -791,6 +791,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Input View: Process Content Button
         processContentBtn.addEventListener('click', handleProcessContent);
+
+        // Input View: Fetch Models
+        const fetchModelsBtn = document.getElementById('fetch-models-btn');
+        if (fetchModelsBtn) {
+            fetchModelsBtn.addEventListener('click', async () => {
+                fetchModelsBtn.disabled = true;
+                const originalText = fetchModelsBtn.innerHTML;
+                fetchModelsBtn.innerHTML = '<span class="material-icons-round mr-1 text-sm animate-spin">refresh</span> Fetching...';
+
+                try {
+                    const response = await apiCall('/api/models');
+                    const modelSelect = document.getElementById('model-select');
+                    if (response.models && response.models.length > 0) {
+                        modelSelect.innerHTML = '';
+                        response.models.forEach(m => {
+                            const option = document.createElement('option');
+                            option.value = m.name;
+                            option.textContent = m.displayName;
+                            modelSelect.appendChild(option);
+                        });
+                        alert("Models fetched successfully!");
+                    } else {
+                        alert("No models found.");
+                    }
+                } catch (err) {
+                    alert(`Failed to fetch models: ${err.message}`);
+                } finally {
+                    fetchModelsBtn.disabled = false;
+                    fetchModelsBtn.innerHTML = originalText;
+                }
+            });
+        }
 
         // Input View: Drag and Drop
         setupDragAndDrop();
@@ -927,7 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Check size
             if (file.size > maxFileSize) {
-                alert(`File ${file.name} is too large (Max size: ${maxFileSize / (1024*1024)} MB).`);
+                alert(`File ${file.name} is too large (Max size: ${maxFileSize / (1024 * 1024)} MB).`);
                 return;
             }
 
@@ -970,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </button>
             `;
 
-            fileElement.querySelector('button').addEventListener('click', function() {
+            fileElement.querySelector('button').addEventListener('click', function () {
                 appState.selectedFiles.delete(fileId);
                 updateFileListDisplay();
                 updateProcessButtonState();
@@ -998,6 +1030,16 @@ document.addEventListener('DOMContentLoaded', () => {
             'Accept': 'application/json',
         };
 
+        const customApiKey = document.getElementById('api-key-input')?.value?.trim();
+        if (customApiKey) {
+            defaultHeaders['X-Gemini-Api-Key'] = customApiKey;
+        }
+
+        const customModel = document.getElementById('model-select')?.value;
+        if (customModel) {
+            defaultHeaders['X-Gemini-Model-Name'] = customModel;
+        }
+
         const config = {
             ...options,
             headers: {
@@ -1017,14 +1059,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Create AbortController for timeout
         const controller = new AbortController();
-        
+
         // UPDATED TIMEOUT LOGIC:
         let timeoutDuration = 60000; // Default 1 min for general calls like chat
         if (endpoint.includes('process-content')) {
             timeoutDuration = 300000; // 5 minutes for initial content processing
         } else if (endpoint.includes('/api/generate-quizzes') ||
-                   endpoint.includes('/api/generate-flashcards') ||
-                   endpoint.includes('/api/generate-mindmap')) {
+            endpoint.includes('/api/generate-flashcards') ||
+            endpoint.includes('/api/generate-mindmap')) {
             timeoutDuration = 180000; // 3 minutes for these potentially long generation tasks
         }
         // END UPDATED TIMEOUT LOGIC
@@ -1075,8 +1117,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Special handling for quiz response cleaning
             if (endpoint === '/api/generate-quizzes' && typeof data === 'string') {
-                 console.warn("Received quiz data as string, attempting cleaning and parsing.");
-                 data = cleanAndParseQuizJson(data); // Use the cleaning function
+                console.warn("Received quiz data as string, attempting cleaning and parsing.");
+                data = cleanAndParseQuizJson(data); // Use the cleaning function
             }
 
 
@@ -1110,7 +1152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Utility function for debouncing API calls
     function debounce(func, wait) {
         let timeout;
-        return function(...args) {
+        return function (...args) {
             const context = this;
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(context, args), wait);
@@ -1209,51 +1251,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Handle initial quiz data (REPLACE logic)
             if (result.data.initial_quiz) {
-                 if (result.data.initial_quiz.status === 'success' && result.data.initial_quiz.questions) {
-                     appState.quizzes = [result.data.initial_quiz]; // *** REPLACE ***
-                     console.log("Initial quiz loaded with", result.data.initial_quiz.questions.length, "questions");
-                     displayQuiz(); // Display immediately if generated
-                 } else if (result.data.initial_quiz.error) {
-                     console.warn("Error generating initial quiz:", result.data.initial_quiz.error);
-                     processingErrors.push(`Initial Quiz Generation: ${result.data.initial_quiz.error}`);
-                     quizContent.innerHTML = `<p class="text-yellow-500 italic text-center py-10">Could not generate initial quiz: ${escapeHtml(result.data.initial_quiz.error)}</p>`;
-                 } else {
-                      console.warn("Initial quiz data is invalid.");
-                      processingErrors.push("Initial Quiz Generation: Received invalid data structure.");
-                 }
+                if (result.data.initial_quiz.status === 'success' && result.data.initial_quiz.questions) {
+                    appState.quizzes = [result.data.initial_quiz]; // *** REPLACE ***
+                    console.log("Initial quiz loaded with", result.data.initial_quiz.questions.length, "questions");
+                    displayQuiz(); // Display immediately if generated
+                } else if (result.data.initial_quiz.error) {
+                    console.warn("Error generating initial quiz:", result.data.initial_quiz.error);
+                    processingErrors.push(`Initial Quiz Generation: ${result.data.initial_quiz.error}`);
+                    quizContent.innerHTML = `<p class="text-yellow-500 italic text-center py-10">Could not generate initial quiz: ${escapeHtml(result.data.initial_quiz.error)}</p>`;
+                } else {
+                    console.warn("Initial quiz data is invalid.");
+                    processingErrors.push("Initial Quiz Generation: Received invalid data structure.");
+                }
             }
 
             // Handle initial flashcards (REPLACE logic)
             if (result.data.initial_flashcards) {
-                 if (result.data.initial_flashcards.status === 'success' && result.data.initial_flashcards.flashcards) {
+                if (result.data.initial_flashcards.status === 'success' && result.data.initial_flashcards.flashcards) {
                     appState.flashcards = [result.data.initial_flashcards]; // *** REPLACE ***
                     appState.currentFlashcardSetIndex = 0;
                     appState.currentFlashcardIndex = 0; // Reset index for the new set
                     console.log("Initial flashcards loaded with", result.data.initial_flashcards.flashcards.length, "cards");
                     displayFlashcards(); // Display immediately
-                 } else if (result.data.initial_flashcards.error) {
-                     console.warn("Error generating initial flashcards:", result.data.initial_flashcards.error);
-                     processingErrors.push(`Initial Flashcard Generation: ${result.data.initial_flashcards.error}`);
-                 } else {
-                     console.warn("Initial flashcard data is invalid.");
-                     processingErrors.push("Initial Flashcard Generation: Received invalid data structure.");
-                 }
+                } else if (result.data.initial_flashcards.error) {
+                    console.warn("Error generating initial flashcards:", result.data.initial_flashcards.error);
+                    processingErrors.push(`Initial Flashcard Generation: ${result.data.initial_flashcards.error}`);
+                } else {
+                    console.warn("Initial flashcard data is invalid.");
+                    processingErrors.push("Initial Flashcard Generation: Received invalid data structure.");
+                }
             }
 
 
             // Handle initial mindmap
             if (result.data.initial_mindmap) {
-                 if (result.data.initial_mindmap.status === 'success' && result.data.initial_mindmap.mindmap_syntax) {
+                if (result.data.initial_mindmap.status === 'success' && result.data.initial_mindmap.mindmap_syntax) {
                     appState.mindMapSyntax = result.data.initial_mindmap.mindmap_syntax;
                     console.log("Initial mind map loaded with", appState.mindMapSyntax.length, "characters of syntax");
                     // Rendering happens when switching to the view
-                 } else if (result.data.initial_mindmap.error) {
-                     console.warn("Error generating initial mind map:", result.data.initial_mindmap.error);
-                     processingErrors.push(`Initial Mind Map Generation: ${result.data.initial_mindmap.error}`);
-                 } else {
-                     console.warn("Initial mind map data is invalid.");
-                     processingErrors.push("Initial Mind Map Generation: Received invalid data structure.");
-                 }
+                } else if (result.data.initial_mindmap.error) {
+                    console.warn("Error generating initial mind map:", result.data.initial_mindmap.error);
+                    processingErrors.push(`Initial Mind Map Generation: ${result.data.initial_mindmap.error}`);
+                } else {
+                    console.warn("Initial mind map data is invalid.");
+                    processingErrors.push("Initial Mind Map Generation: Received invalid data structure.");
+                }
             }
 
             // Display collected warnings/errors
@@ -1304,24 +1346,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Basic validation
             if (!Array.isArray(parsedData)) {
-                 // If it parsed but isn't an array, wrap it? Or error? Let's error for now.
-                 // If the API consistently returns a single object instead of array, adjust here.
-                 console.warn("Parsed quiz data is not an array:", parsedData);
-                 // Let's assume the API should return an object with a 'questions' array
-                 if (parsedData && Array.isArray(parsedData.questions)) {
-                     console.log("Found questions array inside object.");
-                     return parsedData; // Return the object containing the questions array
-                 }
-                 throw new Error("Cleaned quiz JSON is not in the expected array format.");
+                // If it parsed but isn't an array, wrap it? Or error? Let's error for now.
+                // If the API consistently returns a single object instead of array, adjust here.
+                console.warn("Parsed quiz data is not an array:", parsedData);
+                // Let's assume the API should return an object with a 'questions' array
+                if (parsedData && Array.isArray(parsedData.questions)) {
+                    console.log("Found questions array inside object.");
+                    return parsedData; // Return the object containing the questions array
+                }
+                throw new Error("Cleaned quiz JSON is not in the expected array format.");
             }
 
-             // If it's an array, assume it's the questions array directly
-             // Wrap it in the expected structure { quiz_id, questions, status }
-             return {
-                 quiz_id: "cleaned-" + Date.now(),
-                 questions: parsedData,
-                 status: "success"
-             };
+            // If it's an array, assume it's the questions array directly
+            // Wrap it in the expected structure { quiz_id, questions, status }
+            return {
+                quiz_id: "cleaned-" + Date.now(),
+                questions: parsedData,
+                status: "success"
+            };
 
         } catch (error) {
             console.error("Failed to clean and parse quiz JSON:", error);
@@ -1376,8 +1418,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayQuiz(); // Display the new set of questions
                 console.log(`Generated ${response.questions.length} new questions successfully.`);
             } else {
-                 const errorMsg = (response && response.error) ? response.error : "Invalid response or failed to generate questions.";
-                 throw new Error(errorMsg);
+                const errorMsg = (response && response.error) ? response.error : "Invalid response or failed to generate questions.";
+                throw new Error(errorMsg);
             }
 
         } catch (error) {
@@ -1415,7 +1457,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="text-gray-500 italic">No quiz questions generated yet. Use the options above to generate some.</p>
                 </div>
             `;
-             // Hide options if no questions generated
+            // Hide options if no questions generated
             // quizOptionsDiv.classList.add('hidden'); // Keep options visible
             return;
         }
@@ -1429,7 +1471,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-             // Use displayIndex directly as the identifier within this set
+            // Use displayIndex directly as the identifier within this set
             const questionGlobalIndex = String(displayIndex); // Use simple index for replacement logic
 
             // Sanitize MCQ options
@@ -1441,17 +1483,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 q.options = q.options.map(opt => String(opt)); // Ensure strings
             }
             // Sanitize Matching options
-             if (q.type === 'Matching') {
-                 if (!q.options || !Array.isArray(q.options.column_a) || q.options.column_a.length !== 5 ||
-                     !Array.isArray(q.options.column_b) || q.options.column_b.length !== 5 ||
-                     !Array.isArray(q.correct_answer) || q.correct_answer.length !== 5) {
-                     console.warn(`Matching question ${displayIndex + 1} has invalid structure (needs 5 items per column/answer). Skipping.`, q);
-                     return; // Skip rendering this question
-                 }
-                 // Ensure items are strings
-                 q.options.column_a = q.options.column_a.map(item => String(item));
-                 q.options.column_b = q.options.column_b.map(item => String(item));
-             }
+            if (q.type === 'Matching') {
+                if (!q.options || !Array.isArray(q.options.column_a) || q.options.column_a.length !== 5 ||
+                    !Array.isArray(q.options.column_b) || q.options.column_b.length !== 5 ||
+                    !Array.isArray(q.correct_answer) || q.correct_answer.length !== 5) {
+                    console.warn(`Matching question ${displayIndex + 1} has invalid structure (needs 5 items per column/answer). Skipping.`, q);
+                    return; // Skip rendering this question
+                }
+                // Ensure items are strings
+                q.options.column_a = q.options.column_a.map(item => String(item));
+                q.options.column_b = q.options.column_b.map(item => String(item));
+            }
 
 
             const questionDiv = document.createElement('div');
@@ -1476,18 +1518,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     optionsHtml += `</div>`;
                     break;
                 case 'True/False':
-                     optionsHtml = `<div class="space-y-3">`;
-                     ["True", "False"].forEach((option, optIndex) => {
-                         const optionId = `q${displayIndex}_opt${optIndex}`;
-                         optionsHtml += `
+                    optionsHtml = `<div class="space-y-3">`;
+                    ["True", "False"].forEach((option, optIndex) => {
+                        const optionId = `q${displayIndex}_opt${optIndex}`;
+                        optionsHtml += `
                              <div class="option-container">
                                  <label for="${optionId}" class="flex items-center">
                                      <input type="radio" id="${optionId}" name="q${displayIndex}" value="${option}" data-global-index="${questionGlobalIndex}" class="mr-3 form-radio text-blue-500 bg-gray-700 border-gray-600 focus:ring-blue-400 focus:ring-opacity-50">
                                      <span>${option}</span>
                                  </label>
                              </div>`;
-                     });
-                     optionsHtml += `</div>`;
+                    });
+                    optionsHtml += `</div>`;
                     break;
                 case 'Fill_in_the_Blank':
                     optionsHtml = `
@@ -1551,12 +1593,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex items-start">
                         <span class="font-semibold text-gray-400 mr-2">${displayIndex + 1}.</span>
                         <div class="question-text text-lg font-medium text-gray-100 flex-grow"></div>
-                        <span class="ml-2 text-sm text-gray-400 italic" title="Target Bloom's Level: ${escapeHtml(q.difficulty || 'N/A')}">${
-                          q.type === 'MCQ' ? 'Multiple Choice' :
-                          q.type === 'True/False' ? 'True/False' :
-                          q.type === 'Fill_in_the_Blank' ? 'Fill in the Blank' :
-                          q.type === 'Matching' ? 'Matching (5x5)' :
-                          q.type === 'Short_Answer' ? 'Short Answer' : escapeHtml(q.type)}</span>
+                        <span class="ml-2 text-sm text-gray-400 italic" title="Target Bloom's Level: ${escapeHtml(q.difficulty || 'N/A')}">${q.type === 'MCQ' ? 'Multiple Choice' :
+                    q.type === 'True/False' ? 'True/False' :
+                        q.type === 'Fill_in_the_Blank' ? 'Fill in the Blank' :
+                            q.type === 'Matching' ? 'Matching (5x5)' :
+                                q.type === 'Short_Answer' ? 'Short Answer' : escapeHtml(q.type)}</span>
                     </div>
                 </div>
                 <div class="options-area">${optionsHtml}</div>
@@ -1571,14 +1612,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (optionLabel) renderFormattedContent(optionLabel, option);
                 });
             } else if (q.type === 'Matching') {
-                 q.options.column_a.forEach((item, index) => {
-                     const el = questionDiv.querySelector(`.term-a-${index}`);
-                     if (el) renderFormattedContent(el, item);
-                 });
-                 q.options.column_b.forEach((item, index) => {
-                     const el = questionDiv.querySelector(`.term-b-${index}`);
-                     if (el) renderFormattedContent(el, item);
-                 });
+                q.options.column_a.forEach((item, index) => {
+                    const el = questionDiv.querySelector(`.term-a-${index}`);
+                    if (el) renderFormattedContent(el, item);
+                });
+                q.options.column_b.forEach((item, index) => {
+                    const el = questionDiv.querySelector(`.term-b-${index}`);
+                    if (el) renderFormattedContent(el, item);
+                });
             }
 
             quizContent.appendChild(questionDiv);
@@ -1686,8 +1727,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Convert index back to number to access array
             const displayIndex = parseInt(displayIndexStr);
             if (isNaN(displayIndex) || displayIndex < 0 || displayIndex >= questionsData.length) {
-                 console.warn(`Invalid index ${displayIndexStr} found on rendered question div. Skipping.`);
-                 return; // Skip if index is bad
+                console.warn(`Invalid index ${displayIndexStr} found on rendered question div. Skipping.`);
+                return; // Skip if index is bad
             }
 
             // Get the corresponding question data using the numeric index
@@ -1695,8 +1736,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Ensure question data exists for this index
             if (!q) {
-                 console.warn(`No question data found at index ${displayIndex}. Skipping.`);
-                 return;
+                console.warn(`No question data found at index ${displayIndex}. Skipping.`);
+                return;
             }
 
             const feedbackDiv = questionDiv.querySelector('.feedback-container');
@@ -1722,8 +1763,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     case 'Fill_in_the_Blank':
                         const correctAnswers = Array.isArray(q.correct_answer) ? q.correct_answer : [q.correct_answer];
                         isCorrect = correctAnswers.some(ans =>
-                             userAnswer && typeof userAnswer === 'string' && ans && typeof ans === 'string' &&
-                             userAnswer.trim().toLowerCase() === ans.trim().toLowerCase()
+                            userAnswer && typeof userAnswer === 'string' && ans && typeof ans === 'string' &&
+                            userAnswer.trim().toLowerCase() === ans.trim().toLowerCase()
                         );
                         if (isCorrect) correctCount++;
                         feedbackText = `Your Answer: ${escapeHtml(userAnswer || 'N/A')}. Correct Answer(s): ${correctAnswers.map(a => escapeHtml(a || '')).join('/')}. ${isCorrect ? 'Correct!' : 'Incorrect.'} ${q.explanation || ''}`;
@@ -1762,11 +1803,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             let correctPairsHtml = "<li>Could not determine correct pairs.</li>";
                             if (q.options && Array.isArray(q.options.column_a) && Array.isArray(q.options.column_b)) {
                                 correctPairsHtml = q.correct_answer.map(map => {
-                                     if (typeof map !== 'string') return '<li>Invalid map format</li>';
-                                     const [aIndex, bIndex] = map.split('-');
-                                     const aText = q.options.column_a[aIndex] ?? `Item A${aIndex}`;
-                                     const bText = q.options.column_b[bIndex] ?? `Item B${bIndex}`;
-                                     return `<li class="my-1">${escapeHtml(String.fromCharCode(65 + parseInt(aIndex)))}. ${escapeHtml(aText)} → ${escapeHtml(bText)}</li>`;
+                                    if (typeof map !== 'string') return '<li>Invalid map format</li>';
+                                    const [aIndex, bIndex] = map.split('-');
+                                    const aText = q.options.column_a[aIndex] ?? `Item A${aIndex}`;
+                                    const bText = q.options.column_b[bIndex] ?? `Item B${bIndex}`;
+                                    return `<li class="my-1">${escapeHtml(String.fromCharCode(65 + parseInt(aIndex)))}. ${escapeHtml(aText)} → ${escapeHtml(bText)}</li>`;
                                 }).join('');
                             }
                             feedbackText = `You matched ${matchCorrectCount} out of ${totalMatches} correctly. ${isCorrect ? 'All Correct!' : 'Partially Correct.'}<br>Correct pairings:<ul class="list-disc ml-5 mt-2">${correctPairsHtml}</ul>${q.explanation || ''}`;
@@ -1825,12 +1866,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 appState.quizResults[displayIndexStr] = { correct: false, feedback_html: `<p class="text-red-500">Error evaluating this answer.</p>` };
             }
 
-             // Disable inputs for this question *after* storing answer
-             questionDiv.querySelectorAll('input, textarea, select').forEach(input => input.disabled = true);
+            // Disable inputs for this question *after* storing answer
+            questionDiv.querySelectorAll('input, textarea, select').forEach(input => input.disabled = true);
 
-             // For non-Short_Answer types, store result immediately.
-             // For Short_Answer, the promise callback will update quizResults later.
-             // We'll update the DOM for *all* questions *after* the promises resolve.
+            // For non-Short_Answer types, store result immediately.
+            // For Short_Answer, the promise callback will update quizResults later.
+            // We'll update the DOM for *all* questions *after* the promises resolve.
 
         }); // End loop through rendered questions
 
@@ -1839,31 +1880,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Now update the DOM with all results ---
         renderedQuestionDivs.forEach((questionDiv) => {
-             const displayIndexStr = questionDiv.dataset.globalIndex;
-             const feedbackDiv = questionDiv.querySelector('.feedback-container');
-             const result = appState.quizResults[displayIndexStr]; // Get the final result
+            const displayIndexStr = questionDiv.dataset.globalIndex;
+            const feedbackDiv = questionDiv.querySelector('.feedback-container');
+            const result = appState.quizResults[displayIndexStr]; // Get the final result
 
-             if (result && feedbackDiv) { // Check if result exists
-                 const isCorrect = result.correct;
-                 const feedbackHtml = result.feedback_html;
+            if (result && feedbackDiv) { // Check if result exists
+                const isCorrect = result.correct;
+                const feedbackHtml = result.feedback_html;
 
-                 let statusIcon, statusClass, statusText;
+                let statusIcon, statusClass, statusText;
 
-                 if (isCorrect === null) { // Should only happen if evaluation promise failed badly
-                     statusIcon = 'help_outline';
-                     statusClass = 'text-gray-500';
-                     statusText = 'Evaluation Pending/Failed';
-                 } else if (isCorrect) {
-                     statusIcon = 'check_circle';
-                     statusClass = 'text-green-500';
-                     statusText = 'Correct';
-                 } else {
-                     statusIcon = 'cancel';
-                     statusClass = 'text-red-500';
-                     statusText = 'Incorrect';
-                 }
+                if (isCorrect === null) { // Should only happen if evaluation promise failed badly
+                    statusIcon = 'help_outline';
+                    statusClass = 'text-gray-500';
+                    statusText = 'Evaluation Pending/Failed';
+                } else if (isCorrect) {
+                    statusIcon = 'check_circle';
+                    statusClass = 'text-green-500';
+                    statusText = 'Correct';
+                } else {
+                    statusIcon = 'cancel';
+                    statusClass = 'text-red-500';
+                    statusText = 'Incorrect';
+                }
 
-                 feedbackDiv.innerHTML = `
+                feedbackDiv.innerHTML = `
                      <div class="border-t border-gray-700 pt-4">
                          <div class="flex items-center mb-2">
                              <span class="material-icons-round ${statusClass} mr-2">${statusIcon}</span>
@@ -1875,19 +1916,19 @@ document.addEventListener('DOMContentLoaded', () => {
                      </div>
                  `;
 
-                 feedbackDiv.classList.remove('hidden'); // Show the feedback
+                feedbackDiv.classList.remove('hidden'); // Show the feedback
 
-                 // Re-run MathJax if feedback contains LaTeX (optional, based on content)
-                 if (window.MathJax && feedbackHtml.includes('$')) {
-                     MathJax.Hub.Queue(["Typeset", MathJax.Hub, feedbackDiv]);
-                 }
-             } else {
-                  console.warn(`No result found or feedback div missing for index ${displayIndexStr}`);
-                  if (feedbackDiv) {
-                      feedbackDiv.innerHTML = `<p class="text-gray-500">Could not display feedback.</p>`;
-                      feedbackDiv.classList.remove('hidden');
-                  }
-             }
+                // Re-run MathJax if feedback contains LaTeX (optional, based on content)
+                if (window.MathJax && feedbackHtml.includes('$')) {
+                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, feedbackDiv]);
+                }
+            } else {
+                console.warn(`No result found or feedback div missing for index ${displayIndexStr}`);
+                if (feedbackDiv) {
+                    feedbackDiv.innerHTML = `<p class="text-gray-500">Could not display feedback.</p>`;
+                    feedbackDiv.classList.remove('hidden');
+                }
+            }
         });
 
 
@@ -1953,7 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      </div>
                      <div id="card-counter" class="text-center mt-4 text-gray-400 text-sm"></div>
                 `;
-                 // Re-assign DOM elements for the newly created structure
+                // Re-assign DOM elements for the newly created structure
                 flashcardContainer = document.getElementById('flashcard');
                 flashcardFront = document.getElementById('flashcard-front');
                 flashcardBack = document.getElementById('flashcard-back');
@@ -2039,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Please process content first to generate notes.");
             return;
         }
-    
+
         setLoading(true, "Generating mind map syntax...");
         mindmapErrorDiv.classList.add('hidden');
         mindmapContainer.innerHTML = `
@@ -2047,7 +2088,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="loading-spinner mb-4 mx-auto"></div>
                 <p class="text-gray-400">Generating mind map structure...</p>
             </div>`;
-    
+
         try {
             const response = await apiCall('/api/generate-mindmap', {
                 method: 'POST',
@@ -2056,7 +2097,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     original_text: appState.originalText
                 })
             });
-    
+
             if (response.status === "success" && response.mindmap_syntax) {
                 appState.mindMapSyntax = response.mindmap_syntax;
                 console.log("Received mind map syntax:", response.mindmap_syntax.substring(0, 100) + "...");
@@ -2152,12 +2193,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.cytoscape && appState.librariesLoaded.cytoscape) {
                     console.log("Attempting render with Cytoscape...");
                     if (renderWithCytoscape()) { // renderWithCytoscape returns true on success attempt
-                         console.log("Cytoscape rendering initiated.");
-                         return; // Success
+                        console.log("Cytoscape rendering initiated.");
+                        return; // Success
                     }
                     console.warn("Cytoscape rendering failed, trying next library.");
                 } else {
-                     console.log("Cytoscape library not available or not loaded.");
+                    console.log("Cytoscape library not available or not loaded.");
                 }
 
                 // 3. Try jsPlumb (often more complex, lower priority) - Currently disabled as it's less reliable
@@ -2225,17 +2266,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // *** MODIFICATION START: Queue MathJax AFTER Mermaid SVG exists ***
             if (window.MathJax && appState.mindMapSyntax.includes('$')) {
-                 console.log("Syntax contains '$', queueing MathJax for the mermaid element...");
-                 try {
-                      // Target the specific mermaid element that now contains the SVG
-                      MathJax.Hub.Queue(["Typeset", MathJax.Hub, mermaidElement]);
-                      console.log("MathJax typesetting queued successfully.");
-                 } catch (mjError) {
-                      console.error("Error queueing MathJax:", mjError);
-                      // Don't fail the whole render, but log the error
-                 }
+                console.log("Syntax contains '$', queueing MathJax for the mermaid element...");
+                try {
+                    // Target the specific mermaid element that now contains the SVG
+                    MathJax.Hub.Queue(["Typeset", MathJax.Hub, mermaidElement]);
+                    console.log("MathJax typesetting queued successfully.");
+                } catch (mjError) {
+                    console.error("Error queueing MathJax:", mjError);
+                    // Don't fail the whole render, but log the error
+                }
             } else {
-                 console.log("No '$' found in syntax or MathJax not loaded, skipping MathJax queue.");
+                console.log("No '$' found in syntax or MathJax not loaded, skipping MathJax queue.");
             }
             // *** MODIFICATION END ***
 
@@ -2308,14 +2349,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderWithCytoscape() {
         try {
             if (!window.cytoscape) {
-                 console.error("Cytoscape library not available.");
-                 return false;
+                console.error("Cytoscape library not available.");
+                return false;
             }
 
             const { nodes, connections } = parseMermaidSyntax(appState.mindMapSyntax);
             if (!nodes || nodes.length === 0) {
-                 console.warn("No nodes parsed for Cytoscape.");
-                 return false;
+                console.warn("No nodes parsed for Cytoscape.");
+                return false;
             }
 
             // Create container with increased height
@@ -2338,48 +2379,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 container: document.getElementById('cytoscape-canvas'),
                 elements: cyElements,
                 style: [ // *** MODIFIED STYLES ***
-                    { selector: 'node', style: {
-                        'label': 'data(label)',
-                        'text-valign': 'center',
-                        'text-halign': 'center',
-                        'background-color': '#4b5563',
-                        'color': '#ffffff',
-                        'text-wrap': 'wrap',
-                        'text-max-width': '120px', // Increased max width for text
-                        'font-size': '14px', // Increased font size
-                        'padding': '12px', // Increased padding around text
-                        'shape': 'round-rectangle',
-                        'width': 'label', // Auto width based on label
-                        'height': 'label' // Auto height based on label
-                    }},
-                    { selector: 'node[type="main"]', style: {
-                        'background-color': '#3b82f6',
-                        'font-weight': 'bold',
-                        'font-size': '16px', // Larger font for main node
-                         'padding': '15px'
-                    }},
-                    { selector: 'edge', style: {
-                        'width': 1.5,
-                        'line-color': '#6b7280',
-                        'target-arrow-color': '#6b7280',
-                        'target-arrow-shape': 'triangle',
-                        'curve-style': 'bezier',
-                        'arrow-scale': 0.8,
-                        'label': 'data(label)', // Display edge labels if present
-                        'color': '#9ca3af',
-                        'font-size': '10px',
-                        'text-background-color': '#1f2937', // Background for edge labels
-                        'text-background-opacity': 0.7,
-                        'text-background-padding': '2px'
-                    }}
+                    {
+                        selector: 'node', style: {
+                            'label': 'data(label)',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'background-color': '#4b5563',
+                            'color': '#ffffff',
+                            'text-wrap': 'wrap',
+                            'text-max-width': '120px', // Increased max width for text
+                            'font-size': '14px', // Increased font size
+                            'padding': '12px', // Increased padding around text
+                            'shape': 'round-rectangle',
+                            'width': 'label', // Auto width based on label
+                            'height': 'label' // Auto height based on label
+                        }
+                    },
+                    {
+                        selector: 'node[type="main"]', style: {
+                            'background-color': '#3b82f6',
+                            'font-weight': 'bold',
+                            'font-size': '16px', // Larger font for main node
+                            'padding': '15px'
+                        }
+                    },
+                    {
+                        selector: 'edge', style: {
+                            'width': 1.5,
+                            'line-color': '#6b7280',
+                            'target-arrow-color': '#6b7280',
+                            'target-arrow-shape': 'triangle',
+                            'curve-style': 'bezier',
+                            'arrow-scale': 0.8,
+                            'label': 'data(label)', // Display edge labels if present
+                            'color': '#9ca3af',
+                            'font-size': '10px',
+                            'text-background-color': '#1f2937', // Background for edge labels
+                            'text-background-opacity': 0.7,
+                            'text-background-padding': '2px'
+                        }
+                    }
                 ],
-                 // Adjusted layout parameters for potentially better spacing
+                // Adjusted layout parameters for potentially better spacing
                 layout: {
-                     name: 'breadthfirst', // Or try 'cose', 'cola', 'dagre'
-                     directed: true,
-                     padding: 30, // Increased padding around graph
-                     spacingFactor: 1.5, // Increased spacing between nodes
-                     fit: true // Fit the graph to the viewport initially
+                    name: 'breadthfirst', // Or try 'cose', 'cola', 'dagre'
+                    directed: true,
+                    padding: 30, // Increased padding around graph
+                    spacingFactor: 1.5, // Increased spacing between nodes
+                    fit: true // Fit the graph to the viewport initially
                 }
             });
 
@@ -2408,7 +2455,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Ensure container exists
             if (!mindmapContainer) return;
-             console.log("Rendering simple mind map fallback..."); // Added log
+            console.log("Rendering simple mind map fallback..."); // Added log
 
             let contentHtml = '';
             const { nodes, connections } = parseMermaidSyntax(appState.mindMapSyntax);
@@ -2447,13 +2494,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!nodeList || nodeList.length === 0 || level > 10) return '';
                     let listHtml = `<ul class="list-none ml-${level * 4} space-y-1.5">`;
                     nodeList.forEach(node => {
-                         const nodeClass = node.type === 'main' ? 'font-semibold text-blue-300' : 'text-gray-300';
-                         // Add data attributes to store node text and track children
-                         listHtml += `<li class="${nodeClass}" data-node-id="${node.id}" data-node-text="${escapeHtml(node.text)}">
+                        const nodeClass = node.type === 'main' ? 'font-semibold text-blue-300' : 'text-gray-300';
+                        // Add data attributes to store node text and track children
+                        listHtml += `<li class="${nodeClass}" data-node-id="${node.id}" data-node-text="${escapeHtml(node.text)}">
                                         <span class="mr-2 text-gray-500">•</span><span class="node-label-placeholder"></span>`; // Placeholder for label
-                         // Recursively add children structure
-                         listHtml += buildListStructure(childrenMap[node.id], level + 1);
-                         listHtml += '</li>';
+                        // Recursively add children structure
+                        listHtml += buildListStructure(childrenMap[node.id], level + 1);
+                        listHtml += '</li>';
                     });
                     listHtml += '</ul>';
                     return listHtml;
@@ -2461,8 +2508,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 contentHtml = buildListStructure(rootNodes);
 
-                 // Display the fallback content structure
-                 mindmapContainer.innerHTML = `
+                // Display the fallback content structure
+                mindmapContainer.innerHTML = `
                      <div class="p-4 bg-gray-800 rounded-lg border border-dashed border-yellow-600">
                          <p class="text-yellow-400 text-sm mb-3"><span class="material-icons-round text-sm mr-1 align-bottom">warning</span>${escapeHtml(errorMessage)} Using simplified view.</p>
                          <div id="fallback-mindmap-list" class="max-h-[600px] overflow-auto">
@@ -2471,38 +2518,38 @@ document.addEventListener('DOMContentLoaded', () => {
                      </div>
                  `;
 
-                 // --- New Step: Iterate and Render Content AFTER structure is in DOM ---
-                 const listContainer = document.getElementById('fallback-mindmap-list');
-                 if (listContainer) {
-                     listContainer.querySelectorAll('li[data-node-id]').forEach(liElement => {
-                          const nodeText = liElement.dataset.nodeText; // Get raw text
-                          const labelPlaceholder = liElement.querySelector('.node-label-placeholder');
-                          if (labelPlaceholder && nodeText) {
-                              // Use renderFormattedContent on the placeholder span
-                              renderFormattedContent(labelPlaceholder, nodeText);
-                          }
-                     });
+                // --- New Step: Iterate and Render Content AFTER structure is in DOM ---
+                const listContainer = document.getElementById('fallback-mindmap-list');
+                if (listContainer) {
+                    listContainer.querySelectorAll('li[data-node-id]').forEach(liElement => {
+                        const nodeText = liElement.dataset.nodeText; // Get raw text
+                        const labelPlaceholder = liElement.querySelector('.node-label-placeholder');
+                        if (labelPlaceholder && nodeText) {
+                            // Use renderFormattedContent on the placeholder span
+                            renderFormattedContent(labelPlaceholder, nodeText);
+                        }
+                    });
 
-                     // Explicitly queue MathJax for the entire list container after processing all nodes
-                     if (window.MathJax) {
-                         console.log("Queueing MathJax for fallback list container.");
-                         try {
-                             MathJax.Hub.Queue(["Typeset", MathJax.Hub, listContainer]);
-                         } catch (mjError) {
-                             console.error("Error queueing MathJax for fallback list:", mjError);
-                         }
-                     }
-                 } else {
-                      console.error("Fallback list container not found.");
-                 }
+                    // Explicitly queue MathJax for the entire list container after processing all nodes
+                    if (window.MathJax) {
+                        console.log("Queueing MathJax for fallback list container.");
+                        try {
+                            MathJax.Hub.Queue(["Typeset", MathJax.Hub, listContainer]);
+                        } catch (mjError) {
+                            console.error("Error queueing MathJax for fallback list:", mjError);
+                        }
+                    }
+                } else {
+                    console.error("Fallback list container not found.");
+                }
 
 
             } else {
                 // If parsing failed, show raw syntax
                 contentHtml = `<pre class="text-sm whitespace-pre-wrap">${escapeHtml(appState.mindMapSyntax)}</pre>`;
                 errorMessage += " Displaying raw structure.";
-                 // Display the error message and raw syntax
-                 mindmapContainer.innerHTML = `
+                // Display the error message and raw syntax
+                mindmapContainer.innerHTML = `
                      <div class="p-4 bg-gray-800 rounded-lg border border-dashed border-yellow-600">
                          <p class="text-yellow-400 text-sm mb-3"><span class="material-icons-round text-sm mr-1 align-bottom">warning</span>${escapeHtml(errorMessage)}</p>
                          <div class="max-h-[600px] overflow-auto">
@@ -2591,7 +2638,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const label = connMatch[2]?.trim() || ''; // Get optional label
                 const targetId = connMatch[3];
 
-                console.log(`Parsed Connection: ${sourceId} --${label ? '['+label+']' : ''}--> ${targetId}`); // Added log
+                console.log(`Parsed Connection: ${sourceId} --${label ? '[' + label + ']' : ''}--> ${targetId}`); // Added log
 
                 // Ensure source node exists implicitly
                 if (!nodeMap[sourceId]) {
@@ -2602,7 +2649,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 // Ensure target node exists implicitly
                 if (!nodeMap[targetId]) {
-                     console.log(`Implicit Node: ${targetId}`); // Added log
+                    console.log(`Implicit Node: ${targetId}`); // Added log
                     const newNode = { id: targetId, text: targetId, type: 'default' };
                     nodes.push(newNode);
                     nodeMap[targetId] = newNode;
@@ -2678,9 +2725,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (Array.isArray(response.history)) {
                     appState.chatHistory = response.history;
                 } else {
-                     console.warn("Received invalid chat history from backend, appending manually.");
-                     // Manually append assistant response if history update failed
-                     appState.chatHistory.push({ role: 'model', parts: [response.response] });
+                    console.warn("Received invalid chat history from backend, appending manually.");
+                    // Manually append assistant response if history update failed
+                    appState.chatHistory.push({ role: 'model', parts: [response.response] });
                 }
 
             } else {
@@ -2733,7 +2780,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chatHistoryDiv.appendChild(messageContainer);
         // Ensure scroll to bottom happens after content is potentially rendered
         setTimeout(() => {
-             chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
+            chatHistoryDiv.scrollTop = chatHistoryDiv.scrollHeight;
         }, 50);
     }
 
@@ -2807,7 +2854,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         break;
 
                     case 'html':
-                         const basicCSS = `
+                        const basicCSS = `
                              :root {
                                --bg-color: #121212;
                                --text-color: #e0e0e0;
@@ -2852,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                }
                              }
                          `;
-                         const tocScript = `
+                        const tocScript = `
                              document.addEventListener('DOMContentLoaded', function() {
                                  const content = document.querySelector('.prose');
                                  const headings = content.querySelectorAll('h1, h2, h3');
@@ -2877,16 +2924,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                  }
                              });
                          `;
-                         const renderedNotesHtml = notesContent.innerHTML;
-                         content = `
+                        const renderedNotesHtml = notesContent.innerHTML;
+                        content = `
  <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>${escapeHtml(appState.title)} - Study Notes</title><style>${basicCSS}#table-of-contents{margin:2rem 0;padding:1rem;background-color:rgba(255,255,255,0.05);border-radius:8px}.toc-list{list-style-type:none;padding-left:0}.toc-h1{font-weight:bold;margin-top:.5rem}.toc-h2{padding-left:1.5rem;margin:.25rem 0}.toc-h3{padding-left:3rem;margin:.25rem 0;font-size:.9em}.toc-item a{color:var(--text-color);text-decoration:none;transition:color .2s}.toc-item a:hover{color:var(--link-color)}.print-button{position:fixed;bottom:2rem;right:2rem;background-color:var(--link-color);color:#fff;border:none;border-radius:50%;width:50px;height:50px;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.2);z-index:100}.print-button svg{width:24px;height:24px}@media print{.print-button{display:none}}</style>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.9/MathJax.js?config=TeX-MML-AM_CHTML"></script><script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']]}});</script>
  <script>${tocScript}</script></head><body><h1 class="title">${escapeHtml(appState.title)}</h1><div id="table-of-contents"><h2>Table of Contents</h2></div><div class="prose">${renderedNotesHtml}</div>
  <footer style="margin-top:2rem;padding-top:1rem;border-top:1px solid var(--border-color);color:#a0aec0;font-size:.9rem;">Generated by AI Study Assistant</footer>
  <button class="print-button" onclick="window.print()" title="Print or Save as PDF"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg></button></body></html>`;
-                         mimeType = 'text/html';
-                         fileName += '.html';
+                        mimeType = 'text/html';
+                        fileName += '.html';
                         break;
 
                     default:

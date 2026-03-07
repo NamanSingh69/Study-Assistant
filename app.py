@@ -50,18 +50,18 @@ def configure_api():
     Falls back to a static cascade if discovery fails.
     Get your free API key at: https://aistudio.google.com/app/apikey
     """
-    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+    # Use fallback API key if none provided in environment
+    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "***REDACTED_API_KEY***")
     SEARCH_ENGINE_ID = os.environ.get("SEARCH_ENGINE_ID")
 
     if not GOOGLE_API_KEY:
-        raise ValueError(
-            "GOOGLE_API_KEY not set. Get a free key at: "
-            "https://aistudio.google.com/app/apikey"
-        )
-    if not SEARCH_ENGINE_ID:
-        raise ValueError("The SEARCH_ENGINE_ID environment variable is not set.")
+        print("Warning: GOOGLE_API_KEY not set, relying on fallback if configured.")
 
-    genai.configure(api_key=GOOGLE_API_KEY)
+    if not SEARCH_ENGINE_ID:
+        print("Warning: SEARCH_ENGINE_ID environment variable is not set. Web search will be disabled.")
+
+    if GOOGLE_API_KEY:
+        genai.configure(api_key=GOOGLE_API_KEY)
 
     # Try dynamic model discovery first
     try:
@@ -742,7 +742,7 @@ def process_content(content_items, topic=None, description=None, web_search=True
 
     # --- API Call ---
     try:
-        notes_generation_model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
+        notes_generation_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
         notes_response = notes_generation_model.generate_content(
             notes_prompt_parts,
             request_options={"timeout": 600}
@@ -934,7 +934,7 @@ Example MCQ Object (Reflecting Enhanced Guidelines):
 """
     try:
         # Use a model suitable for complex instruction following
-        quiz_model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
+        quiz_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
         quiz_response = quiz_model.generate_content(quiz_prompt)
 
         # Robust response handling (keep existing logic)
@@ -1114,7 +1114,7 @@ Return ONLY the valid JSON array `[...]`. Do not include ```json``` markers or a
     # --- End Refined Prompt ---
 
     try:
-        flashcard_model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
+        flashcard_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
         flashcard_response = flashcard_model.generate_content(flashcard_prompt)
 
         # Robust response handling (keep as is)
@@ -1322,7 +1322,7 @@ def chat_with_content(notes, original_text, chat_history, user_message, web_sear
     try:
         # Use generate_content with system instruction and history (Keep existing logic)
         chat_model = genai.GenerativeModel(
-            model_name=DEFAULT_GEMINI_MODEL, # Or your chosen model
+            model_name=getattr(g, 'gemini_model_name', model.model_name), # Or your chosen model
             system_instruction=system_instruction
         )
 
@@ -1459,7 +1459,7 @@ Example Output:
 Return ONLY the JSON object.
 """
     try:
-        eval_model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL) # Use a capable model
+        eval_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name)) # Use a capable model
         eval_response = eval_model.generate_content(eval_prompt)
 
         # Robust response handling
@@ -1558,7 +1558,7 @@ Generate ONLY the valid Mermaid syntax based on the context provided above.
 """
     try:
         # Use a model good at structured output
-        mindmap_model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
+        mindmap_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
         mindmap_response = mindmap_model.generate_content(mindmap_prompt)
 
        # Robust response handling (keep existing logic)
@@ -1613,10 +1613,21 @@ Generate ONLY the valid Mermaid syntax based on the context provided above.
         if "429" in str(e): return {"error": "Rate limit exceeded during mind map generation."}
         return {"error": f"Failed to generate mind map: {str(e)}"}
 
+from flask import g
+
 # --- API Routes (Stateless) ---
 @app.route('/health')
 def health_check():
     return jsonify({"status": "healthy", "service": "Study Assistant API"})
+
+@app.route('/api/models', methods=['GET'])
+def get_models():
+    try:
+        models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        model_list = [{"name": m.name, "displayName": getattr(m, 'display_name', m.name), "version": getattr(m, 'version', 'unknown')} for m in models]
+        return jsonify({"models": model_list})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/api/process-content', methods=['POST'])
@@ -1922,6 +1933,20 @@ def handle_exception(e):
     # Return a generic error message to the client
     return jsonify({"error": "An unexpected error occurred on the server."}), 500
 
+
+@app.before_request
+def configure_gemini_for_request():
+    if request.path.startswith('/api/'):
+        custom_key = request.headers.get('X-Gemini-Api-Key')
+        if custom_key:
+            genai.configure(api_key=custom_key)
+        else:
+            default_key = os.environ.get("GOOGLE_API_KEY", "***REDACTED_API_KEY***")
+            if default_key:
+                genai.configure(api_key=default_key)
+        
+        custom_model = request.headers.get('X-Gemini-Model-Name')
+        g.gemini_model_name = custom_model if custom_model else model.model_name
 
 # --- Main Entry Point ---
 if __name__ == '__main__':
