@@ -50,12 +50,12 @@ def configure_api():
     Falls back to a static cascade if discovery fails.
     Get your free API key at: https://aistudio.google.com/app/apikey
     """
-    # Use fallback API key if none provided in environment
-    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "***REDACTED_API_KEY***")
+    # Use API key strictly from environment variable
+    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
     SEARCH_ENGINE_ID = os.environ.get("SEARCH_ENGINE_ID")
 
     if not GOOGLE_API_KEY:
-        print("Warning: GOOGLE_API_KEY not set, relying on fallback if configured.")
+        print("Warning: GOOGLE_API_KEY not set.")
 
     if not SEARCH_ENGINE_ID:
         print("Warning: SEARCH_ENGINE_ID environment variable is not set. Web search will be disabled.")
