@@ -12,7 +12,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="/static/css/style.css">
     <!-- Marked.js for Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <!-- jsPDF and html2canvas for PDF export -->
@@ -219,13 +219,41 @@
                                 <h2 class="text-xl font-semibold text-gray-100">Options</h2>
                             </div>
 
-                            <!-- Custom API Key -->
-                            <div class="mb-6">
-                                <label for="api-key-input" class="input-label">Custom Gemini API Key (Optional)</label>
-                                <input type="password" id="api-key-input"
-                                    placeholder="Using public fallback key — paste your own for higher limits"
-                                    class="input-field">
-                                <div class="text-xs text-gray-400 mt-2 leading-relaxed">
+                            <!-- Custom API Settings & Mode -->
+                            <div class="mb-6 bg-gray-800 p-4 rounded-lg border border-gray-700 relative">
+                                <div class="flex justify-between items-center mb-3">
+                                    <label class="text-sm font-semibold text-gray-300">Agent Mode & Settings</label>
+                                    <span id="quota-text"
+                                        class="text-xs font-mono bg-blue-900 text-blue-200 px-2 py-1 rounded">Quota: 25
+                                        / 25</span>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                                    <div class="flex gap-2">
+                                        <button type="button" id="mode-pro"
+                                            class="flex-1 py-1.5 px-3 bg-blue-600 text-white text-xs font-semibold rounded hover:bg-blue-500 transition border border-transparent">⚡
+                                            PRO</button>
+                                        <button type="button" id="mode-fast"
+                                            class="flex-1 py-1.5 px-3 bg-gray-700 text-gray-300 text-xs font-semibold rounded hover:bg-gray-600 transition border border-gray-600">🚀
+                                            FAST</button>
+                                    </div>
+                                    <select id="model-select" class="input-field text-sm py-1.5 px-3 bg-gray-900">
+                                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                                        <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <input type="password" id="api-key-input"
+                                        placeholder="Using public fallback key — paste your own for higher limits"
+                                        class="input-field text-sm">
+                                </div>
+
+                                <div class="h-1.5 w-full bg-gray-900 rounded-full overflow-hidden">
+                                    <div id="quota-fill" class="h-full bg-blue-500 transition-all duration-300"
+                                        style="width: 100%;"></div>
+                                </div>
+
+                                <div class="text-xs text-gray-400 mt-3 leading-relaxed">
                                     ✅ A free public API key is active by default. Add your own for higher rate
                                     limits.<br />
                                     <strong>Free Tier Limits:</strong> 15 Requests/Min, 1,000,000 Tokens/Min, 1,500
@@ -513,7 +541,7 @@
         // Pass backend flags/data to JS if needed
         // const API_KEY_SET = {{ api_key_set | tojson }};
     </script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="/static/js/main.js"></script>
 </body>
 
 </html>

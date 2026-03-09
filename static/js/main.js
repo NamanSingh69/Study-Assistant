@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebarCollapsed: false,
             darkMode: true,
             fontSize: 'normal', // 'small', 'normal', 'large'
-            lastUsedDownloadFormat: 'md'
+            lastUsedDownloadFormat: 'md',
+            agentMode: 'pro'
         },
         animations: true, // Global toggle for animations
         librariesLoaded: {
@@ -291,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     applyUserPreferences();
     updateProcessButtonState();
     setupEventListeners();
+    updateQuotaDisplay();
 
     // Hide generation options initially
     quizOptionsDiv.classList.add('hidden');
@@ -546,6 +548,61 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, "&#039;");
     }
 
+    // --- Usage Tracking ---
+    function _trackUsage(modelName) {
+        if (!modelName) modelName = document.getElementById('model-select')?.value || "gemini-2.5-pro";
+        const tier = modelName.includes("pro") ? "pro" : modelName.includes("flash-lite") ? "flash-lite" : "flash";
+        const stored = localStorage.getItem("studyassistant_rate_limits");
+        const today = new Date().toISOString().slice(0, 10);
+        let limits = { date: today, used: {} };
+        if (stored) {
+            const p = JSON.parse(stored);
+            if (p.date === today) limits = p;
+        }
+        limits.used[tier] = (limits.used[tier] || 0) + 1;
+        localStorage.setItem("studyassistant_rate_limits", JSON.stringify(limits));
+    }
+
+    function updateQuotaDisplay() {
+        const textEl = document.getElementById('quota-text');
+        const fillEl = document.getElementById('quota-fill');
+        if (!textEl || !fillEl) return;
+
+        const stored = localStorage.getItem("studyassistant_rate_limits");
+        const today = new Date().toISOString().slice(0, 10);
+        let limits = { date: today, used: {} };
+        if (stored) {
+            const p = JSON.parse(stored);
+            if (p.date === today) limits = p;
+        }
+
+        const tier = appState.preferences.agentMode === "pro" ? "pro" : "flash";
+        const DAILY_LIMITS = {
+            "pro": { "3.1": 50, "2.5": 25 },
+            "flash": { "3.1": 500, "2.5": 250 },
+            "flash-lite": { "3.1": 1000, "2.5": 500 }
+        };
+
+        const limit = DAILY_LIMITS[tier]?.["2.5"] || 25;
+        const used = limits.used[tier] || 0;
+        const remaining = Math.max(0, limit - used);
+
+        textEl.textContent = `Quota: ${remaining} / ${limit}`;
+        const pct = Math.max(0, Math.min(100, (remaining / limit) * 100));
+        fillEl.style.width = pct + '%';
+
+        if (pct > 50) {
+            fillEl.style.background = '#3b82f6'; // blue-500
+            textEl.style.color = '#bfdbfe'; // blue-200
+        } else if (pct > 20) {
+            fillEl.style.background = '#eab308';
+            textEl.style.color = '#fef08a';
+        } else {
+            fillEl.style.background = '#ef4444';
+            textEl.style.color = '#fca5a5';
+        }
+    }
+
     // IMPROVED: Process Markdown and render MathJax/Mermaid with better error handling and retries
     function renderFormattedContent(element, text) {
         if (!text) {
@@ -789,38 +846,48 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Input View: Process Content Button
-        processContentBtn.addEventListener('click', handleProcessContent);
+        // Input View: Mode Toggles
+        const modeProBtn = document.getElementById('mode-pro');
+        const modeFastBtn = document.getElementById('mode-fast');
+        const modelSelect = document.getElementById('model-select');
 
-        // Input View: Fetch Models
-        const fetchModelsBtn = document.getElementById('fetch-models-btn');
-        if (fetchModelsBtn) {
-            fetchModelsBtn.addEventListener('click', async () => {
-                fetchModelsBtn.disabled = true;
-                const originalText = fetchModelsBtn.innerHTML;
-                fetchModelsBtn.innerHTML = '<span class="material-icons-round mr-1 text-sm animate-spin">refresh</span> Fetching...';
+        if (modeProBtn && modeFastBtn && modelSelect) {
+            const updateModeUI = (mode) => {
+                appState.preferences.agentMode = mode;
+                savePreferences();
+                if (mode === 'pro') {
+                    modeProBtn.classList.replace('bg-gray-700', 'bg-blue-600');
+                    modeProBtn.classList.replace('text-gray-300', 'text-white');
+                    modeProBtn.classList.replace('border-gray-600', 'border-transparent');
 
-                try {
-                    const response = await apiCall('/api/models');
-                    const modelSelect = document.getElementById('model-select');
-                    if (response.models && response.models.length > 0) {
-                        modelSelect.innerHTML = '';
-                        response.models.forEach(m => {
-                            const option = document.createElement('option');
-                            option.value = m.name;
-                            option.textContent = m.displayName;
-                            modelSelect.appendChild(option);
-                        });
-                        alert("Models fetched successfully!");
-                    } else {
-                        alert("No models found.");
-                    }
-                } catch (err) {
-                    alert(`Failed to fetch models: ${err.message}`);
-                } finally {
-                    fetchModelsBtn.disabled = false;
-                    fetchModelsBtn.innerHTML = originalText;
+                    modeFastBtn.classList.replace('bg-blue-600', 'bg-gray-700');
+                    modeFastBtn.classList.replace('text-white', 'text-gray-300');
+                    modeFastBtn.classList.replace('border-transparent', 'border-gray-600');
+
+                    modelSelect.innerHTML = '<option value="gemini-2.5-pro">Gemini 2.5 Pro</option><option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>';
+                } else {
+                    modeFastBtn.classList.replace('bg-gray-700', 'bg-blue-600');
+                    modeFastBtn.classList.replace('text-gray-300', 'text-white');
+                    modeFastBtn.classList.replace('border-gray-600', 'border-transparent');
+
+                    modeProBtn.classList.replace('bg-blue-600', 'bg-gray-700');
+                    modeProBtn.classList.replace('text-white', 'text-gray-300');
+                    modeProBtn.classList.replace('border-transparent', 'border-gray-600');
+
+                    modelSelect.innerHTML = '<option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-2.5-flash-8b">Gemini 2.5 Flash-8B</option>';
                 }
+                updateQuotaDisplay();
+            };
+
+            modeProBtn.addEventListener('click', () => updateModeUI('pro'));
+            modeFastBtn.addEventListener('click', () => updateModeUI('fast'));
+
+            // Set initial state
+            updateModeUI(appState.preferences.agentMode || 'pro');
+
+            // Re-render quota on model change (e.g., if changing from flash to flash-8b)
+            modelSelect.addEventListener('change', () => {
+                updateQuotaDisplay();
             });
         }
 
@@ -1108,11 +1175,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const errorMessage = (typeof data === 'object' && data && data.error)
                     ? data.error
                     : `HTTP error ${response.status}: ${response.statusText}`;
+
+                if (response.status === 429) {
+                    throw new Error("⏳ Rate limit reached — try again in ~1 minute, or switch to Fast mode.");
+                }
+
                 console.error(`API Error (${endpoint}): ${errorMessage}`, data);
                 const errorDetails = (typeof data === 'object' && data && data.details) ? data.details.join(', ') : '';
                 // Include raw text snippet in error if parsing failed or it wasn't JSON
                 const rawSnippet = (typeof data !== 'object' || !data.error) ? ` Raw Response: ${responseTextForError.substring(0, 200)}...` : '';
                 throw new Error(`${errorMessage}${errorDetails ? ' - Details: ' + errorDetails : ''}${rawSnippet}`);
+            }
+
+            // Track usage if successful
+            const selectedModel = document.getElementById('model-select')?.value;
+            if (selectedModel) {
+                _trackUsage(selectedModel);
+                updateQuotaDisplay();
             }
 
             // Special handling for quiz response cleaning
