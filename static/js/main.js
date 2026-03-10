@@ -294,6 +294,14 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     updateQuotaDisplay();
 
+    // Initialize Empty States
+    if (window.uxManager) {
+        document.getElementById('notes-empty-state').innerHTML = window.uxManager.getEmptyStateHTML("No Notes Generated", "Provide content and click 'Process Content' to generate detailed study notes.");
+        document.getElementById('quiz-empty-state').innerHTML = window.uxManager.getEmptyStateHTML("No Quiz Generated", "Provide content to generate a quiz to test your knowledge.");
+        document.getElementById('flashcards-empty-state').innerHTML = window.uxManager.getEmptyStateHTML("No Flashcards Generated", "Provide content to generate flashcards.");
+        document.getElementById('mindmap-empty-state').innerHTML = window.uxManager.getEmptyStateHTML("No Mind Map Generated", "Provide content to generate a visual mind map.");
+    }
+
     // Hide generation options initially
     quizOptionsDiv.classList.add('hidden');
 
@@ -467,23 +475,26 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.quizAnswers = {};
         appState.quizResults = {};
 
-        // Clear UI elements
-        notesContent.innerHTML = '<p class="text-gray-500 italic">Notes will appear here once generated.</p>';
+        // Clear UI elements and show empty states
+        document.getElementById('notes-empty-state').style.display = 'block';
+        notesContent.classList.add('hidden');
+        notesContent.innerHTML = '';
         notesTitle.textContent = 'Study Notes';
-        quizContent.innerHTML = '<p class="text-gray-500 italic text-center py-10">Quiz questions will appear here once generated.</p>';
+
+        document.getElementById('quiz-empty-state').style.display = 'block';
+        quizContent.classList.add('hidden');
+        quizContent.innerHTML = '';
         quizActions.classList.add('hidden');
         quizResultsSummary.textContent = '';
+
         flashcardsDisplayArea.classList.add('hidden');
-        noFlashcardsMessage.classList.remove('hidden');
+        document.getElementById('flashcards-empty-state').style.display = 'block';
         cardCounter.textContent = '';
 
         // Reset mindmap with proper placeholder
-        mindmapContainer.innerHTML = `
-            <div class="text-center">
-                <span class="material-icons-round text-gray-500 text-5xl mb-4">account_tree</span>
-                <p id="mindmap-placeholder" class="text-gray-500 italic">Mind map will appear here once generated.</p>
-            </div>
-        `;
+        document.getElementById('mindmap-empty-state').style.display = 'block';
+        mindmapContainer.classList.add('hidden');
+        mindmapContainer.innerHTML = '';
 
         mindmapErrorDiv.classList.add('hidden');
         mindmapErrorDiv.innerHTML = '';
@@ -1247,11 +1258,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         if (urls.length === 0 && files.length === 0 && (!topicVal || !descriptionVal)) {
-            alert('Please provide URLs, upload files, or enter both a topic and description.');
+            window.uxManager.toast.show('Please provide URLs, upload files, or enter both a topic and description.', 'error');
             return;
         }
 
         setLoading(true, 'Processing content and generating notes...');
+
+        // Show skeletons in areas expected to be populated
+        if (window.uxManager) {
+            document.getElementById('notes-empty-state').style.display = 'none';
+            notesContent.innerHTML = window.uxManager.getSkeletonHTML();
+            notesContent.classList.remove('hidden');
+
+            if (generateQuizToggle.checked) {
+                document.getElementById('quiz-empty-state').style.display = 'none';
+                quizContent.innerHTML = window.uxManager.getSkeletonHTML();
+                quizContent.classList.remove('hidden');
+            }
+            if (generateFlashcardsToggle.checked) {
+                document.getElementById('flashcards-empty-state').style.display = 'none';
+                flashcardsDisplayArea.classList.add('hidden');
+            }
+        }
+
         processingWarningsDiv.classList.add('hidden');
         processingErrorsDiv.classList.add('hidden');
 
@@ -1320,11 +1349,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             console.log("Rendering notes content");
             if (appState.notes) {
+                document.getElementById('notes-empty-state').style.display = 'none';
+                notesContent.classList.remove('hidden');
                 renderFormattedContent(notesContent, appState.notes);
                 console.log("Notes rendered successfully");
             } else {
                 console.warn("No notes content received from the server");
-                notesContent.innerHTML = '<p class="text-yellow-500">No notes content was generated. Please try again or check the server logs.</p>';
+                document.getElementById('notes-empty-state').style.display = 'block';
+                notesContent.classList.add('hidden');
                 processingErrors.push("Notes Generation: No notes content was generated.");
             }
 
@@ -1471,11 +1503,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLoading(true, `Generating ${numQuestions} new questions (Level: ${difficulty})...`);
         // Clear previous errors/placeholders in quiz content area
-        quizContent.innerHTML = `
-            <div class="text-center py-10">
-                <div class="loading-spinner mb-4 mx-auto"></div>
-                <p class="text-gray-400">Generating questions...</p>
-            </div>`;
+        if (window.uxManager) {
+            document.getElementById('quiz-empty-state').style.display = 'none';
+            quizContent.innerHTML = window.uxManager.getSkeletonHTML();
+            quizContent.classList.remove('hidden');
+        } else {
+            quizContent.innerHTML = `
+                <div class="text-center py-10">
+                    <div class="loading-spinner mb-4 mx-auto"></div>
+                    <p class="text-gray-400">Generating questions...</p>
+                </div>`;
+        }
         quizActions.classList.add('hidden'); // Hide actions while generating
 
         try {
@@ -1530,16 +1568,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentQuizSet = appState.quizzes[0];
 
         if (!currentQuizSet || !Array.isArray(currentQuizSet.questions) || currentQuizSet.questions.length === 0) {
-            quizContent.innerHTML = `
-                <div class="text-center py-16">
-                    <span class="material-icons-round text-gray-500 text-5xl mb-4">quiz</span>
-                    <p class="text-gray-500 italic">No quiz questions generated yet. Use the options above to generate some.</p>
-                </div>
-            `;
-            // Hide options if no questions generated
-            // quizOptionsDiv.classList.add('hidden'); // Keep options visible
+            document.getElementById('quiz-empty-state').style.display = 'block';
+            quizContent.classList.add('hidden');
             return;
         }
+
+        document.getElementById('quiz-empty-state').style.display = 'none';
+        quizContent.classList.remove('hidden');
 
         quizActions.classList.remove('hidden'); // Show submit button etc.
         const questionsToDisplay = currentQuizSet.questions;
@@ -2028,12 +2063,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         setLoading(true, "Generating new flashcards...");
-        noFlashcardsMessage.classList.add('hidden'); // Hide placeholder
-        flashcardsDisplayArea.innerHTML = `
-            <div class="text-center p-10">
-                <div class="loading-spinner mb-4 mx-auto"></div>
-                <p class="text-gray-400">Generating flashcards...</p>
-            </div>`; // Show loading inside display area
+        document.getElementById('flashcards-empty-state').style.display = 'none';
+
+        if (window.uxManager) {
+            flashcardsDisplayArea.innerHTML = window.uxManager.getSkeletonHTML();
+        } else {
+            flashcardsDisplayArea.innerHTML = `
+                <div class="text-center p-10">
+                    <div class="loading-spinner mb-4 mx-auto"></div>
+                    <p class="text-gray-400">Generating flashcards...</p>
+                </div>`;
+        }
+        flashcardsDisplayArea.classList.remove('hidden');
 
         try {
             // Send empty existing_flashcards as we are replacing
@@ -2162,11 +2203,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setLoading(true, "Generating mind map syntax...");
         mindmapErrorDiv.classList.add('hidden');
-        mindmapContainer.innerHTML = `
-            <div class="text-center p-6">
-                <div class="loading-spinner mb-4 mx-auto"></div>
-                <p class="text-gray-400">Generating mind map structure...</p>
-            </div>`;
+        document.getElementById('mindmap-empty-state').style.display = 'none';
+
+        if (window.uxManager) {
+            mindmapContainer.innerHTML = window.uxManager.getSkeletonHTML();
+            mindmapContainer.classList.remove('hidden');
+        } else {
+            mindmapContainer.innerHTML = `
+                <div class="text-center p-6">
+                    <div class="loading-spinner mb-4 mx-auto"></div>
+                    <p class="text-gray-400">Generating mind map structure...</p>
+                </div>`;
+            mindmapContainer.classList.remove('hidden');
+        }
 
         try {
             const response = await apiCall('/api/generate-mindmap', {
@@ -2233,12 +2282,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Clear the container and error messages before attempting render
         try {
-            mindmapContainer.innerHTML = `
-                <div class="text-center p-10">
-                    <div class="loading-spinner mb-4 mx-auto"></div>
-                    <p class="text-gray-400">Rendering mind map...</p>
-                </div>
-            `;
+            document.getElementById('mindmap-empty-state').style.display = 'none';
+            if (window.uxManager) {
+                mindmapContainer.innerHTML = window.uxManager.getSkeletonHTML();
+                mindmapContainer.classList.remove('hidden');
+            } else {
+                mindmapContainer.innerHTML = `
+                    <div class="text-center p-10">
+                        <div class="loading-spinner mb-4 mx-auto"></div>
+                        <p class="text-gray-400">Rendering mind map...</p>
+                    </div>
+                `;
+            }
             if (mindmapErrorDiv) {
                 mindmapErrorDiv.classList.add('hidden');
                 const errorContent = mindmapErrorDiv.querySelector('div');

@@ -54,9 +54,9 @@
     <!-- Cytoscape.js for graph visualization -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.25.0/cytoscape.min.js"></script>
 
-    <!-- Favicon -->
-    <link rel="icon"
-        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ec4899'/%3E%3Cstop offset='100%25' stop-color='%23db2777'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='45' fill='url(%23g)'/%3E%3Cpath d='M20 60 Q 50 80 80 60 L 80 40 Q 50 60 20 40 Z' fill='white' opacity='0.8'/%3E%3Cpath d='M20 45 L50 25 L80 45 L50 65 Z' fill='white'/%3E%3Cline x1='80' y1='45' x2='80' y2='75' stroke='white' stroke-width='4'/%3E%3C/svg%3E">
+    <!-- Shared UX Components -->
+    <link href="/static/css/Skeleton.css" rel="stylesheet">
+    <script src="/static/js/ux-manager.js"></script>
 </head>
 
 <body class="bg-gray-900 text-gray-200 font-sans flex min-h-screen">
@@ -329,219 +329,213 @@
                                 Download
                             </button>
                         </div>
-                    </div>
-                    <div id="notes-content" class="card prose prose-invert max-w-none academic-technical-style">
-                        <p class="text-gray-500 italic">Notes will appear here once generated.</p>
-                    </div>
-                    <!-- Original Content Toggle -->
-                    <div class="mt-6 card">
-                        <button id="toggle-original-content" class="btn-text flex items-center">
-                            <span class="material-icons-round mr-1 text-blue-400">visibility</span>
-                            Show Original Content
-                        </button>
-                        <div id="original-content-container"
-                            class="hidden mt-4 max-h-96 overflow-y-auto text-sm text-gray-400 border-t border-gray-700 pt-4">
-                            <pre class="whitespace-pre-wrap break-words"></pre>
+                        <div id="notes-content-container">
+                            <div id="notes-empty-state"></div>
+                            <div id="notes-content"
+                                class="card prose prose-invert max-w-none academic-technical-style hidden">
+                            </div>
+                        </div>
+                        <!-- Original Content Toggle -->
+                        <div class="mt-6 card">
+                            <button id="toggle-original-content" class="btn-text flex items-center">
+                                <span class="material-icons-round mr-1 text-blue-400">visibility</span>
+                                Show Original Content
+                            </button>
+                            <div id="original-content-container"
+                                class="hidden mt-4 max-h-96 overflow-y-auto text-sm text-gray-400 border-t border-gray-700 pt-4">
+                                <pre class="whitespace-pre-wrap break-words"></pre>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 3. Quiz View -->
-                <div id="quiz-view" class="view hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center">
-                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">quiz</span>
-                            <h1 class="text-3xl font-bold text-gray-100">Knowledge Quiz</h1>
-                        </div>
-                        <button id="generate-more-questions-btn" class="btn-secondary">
-                            <span class="material-icons-round mr-1">add</span>
-                            Generate More Questions
-                        </button>
-                    </div>
-                    <!-- Quiz Generation Options -->
-                    <div id="quiz-options" class="card mb-6 hidden">
-                        <label class="input-label">Select question types for next batch:</label>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-4">
-                            <label class="flex items-center">
-                                <input type="checkbox" name="quiz_type" value="MCQ" checked
-                                    class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                                <span class="ml-2">Multiple Choice</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="quiz_type" value="True/False"
-                                    class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                                <span class="ml-2">True/False</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="quiz_type" value="Fill_in_the_Blank"
-                                    class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                                <span class="ml-2">Fill in the Blank</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="quiz_type" value="Matching"
-                                    class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                                <span class="ml-2">Matching</span>
-                            </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="quiz_type" value="Short_Answer"
-                                    class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
-                                <span class="ml-2">Short Answer</span>
-                            </label>
-                        </div>
-                        <div class="mb-4">
-                            <label for="quiz-difficulty-select" class="input-label">Question Difficulty (Bloom's
-                                Taxonomy):</label>
-                            <select id="quiz-difficulty-select" class="select-field w-full md:w-auto">
-                                <option value="Remember">Remember (Recall facts)</option>
-                                <option value="Understand">Understand (Explain concepts)</option>
-                                <option value="Apply" selected>Apply (Use info in new situations)</option>
-                                <option value="Analyze">Analyze (Break down info)</option>
-                                <option value="Evaluate">Evaluate (Judge, critique)</option>
-                                <option value="Create">Create (Produce new work)</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center">
-                            <label for="num-questions-input" class="input-label mr-2">Number of Questions:</label>
-                            <input type="number" id="num-questions-input" value="5" min="1" max="15"
-                                class="input-field-small w-20">
-                            <button id="apply-quiz-options" class="btn-primary ml-4">
-                                <span class="material-icons-round mr-1">check</span>
-                                Apply
+                    <!-- 3. Quiz View -->
+                    <div id="quiz-view" class="view hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex items-center">
+                                <span class="material-icons-round text-blue-400 mr-3 text-3xl">quiz</span>
+                                <h1 class="text-3xl font-bold text-gray-100">Knowledge Quiz</h1>
+                            </div>
+                            <button id="generate-more-questions-btn" class="btn-secondary">
+                                <span class="material-icons-round mr-1">add</span>
+                                Generate More Questions
                             </button>
                         </div>
-                    </div>
-
-                    <div id="quiz-content" class="space-y-6">
-                        <p class="text-gray-500 italic text-center py-10">Quiz questions will appear here once
-                            generated.</p>
-                    </div>
-                    <div id="quiz-actions" class="mt-6 flex justify-between items-center hidden">
-                        <button id="submit-quiz-btn" class="btn-primary" disabled>
-                            <span class="material-icons-round mr-1">check_circle</span>
-                            Submit Answers
-                        </button>
-                        <div id="quiz-results-summary" class="text-lg font-semibold"></div>
-                    </div>
-                </div>
-
-                <!-- 4. Flashcards View -->
-                <div id="flashcards-view" class="view hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center">
-                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">style</span>
-                            <h1 class="text-3xl font-bold text-gray-100">Flashcards</h1>
+                        <!-- Quiz Generation Options -->
+                        <div id="quiz-options" class="card mb-6 hidden">
+                            <label class="input-label">Select question types for next batch:</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm mb-4">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="quiz_type" value="MCQ" checked
+                                        class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                    <span class="ml-2">Multiple Choice</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="quiz_type" value="True/False"
+                                        class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                    <span class="ml-2">True/False</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="quiz_type" value="Fill_in_the_Blank"
+                                        class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                    <span class="ml-2">Fill in the Blank</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="quiz_type" value="Matching"
+                                        class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                    <span class="ml-2">Matching</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="quiz_type" value="Short_Answer"
+                                        class="form-checkbox h-4 w-4 text-blue-500 bg-gray-700 border-gray-600 rounded">
+                                    <span class="ml-2">Short Answer</span>
+                                </label>
+                            </div>
+                            <div class="mb-4">
+                                <label for="quiz-difficulty-select" class="input-label">Question Difficulty (Bloom's
+                                    Taxonomy):</label>
+                                <select id="quiz-difficulty-select" class="select-field w-full md:w-auto">
+                                    <option value="Remember">Remember (Recall facts)</option>
+                                    <option value="Understand">Understand (Explain concepts)</option>
+                                    <option value="Apply" selected>Apply (Use info in new situations)</option>
+                                    <option value="Analyze">Analyze (Break down info)</option>
+                                    <option value="Evaluate">Evaluate (Judge, critique)</option>
+                                    <option value="Create">Create (Produce new work)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center">
+                                <label for="num-questions-input" class="input-label mr-2">Number of Questions:</label>
+                                <input type="number" id="num-questions-input" value="5" min="1" max="15"
+                                    class="input-field-small w-20">
+                                <button id="apply-quiz-options" class="btn-primary ml-4">
+                                    <span class="material-icons-round mr-1">check</span>
+                                    Apply
+                                </button>
+                            </div>
                         </div>
-                        <button id="generate-more-flashcards-btn" class="btn-secondary">
-                            <span class="material-icons-round mr-1">add</span>
-                            Generate More Flashcards
-                        </button>
+
+                        <div id="quiz-empty-state"></div>
+                        <div id="quiz-content" class="space-y-6 hidden">
+                        </div>
+                        <div id="quiz-actions" class="mt-6 flex justify-between items-center hidden">
+                            <button id="submit-quiz-btn" class="btn-primary" disabled>
+                                <span class="material-icons-round mr-1">check_circle</span>
+                                Submit Answers
+                            </button>
+                            <div id="quiz-results-summary" class="text-lg font-semibold"></div>
+                        </div>
                     </div>
-                    <div class="card">
-                        <div id="flashcards-display-area" class="hidden">
-                            <div class="flashcard-container relative mx-auto" style="height: 300px; max-width: 600px;">
-                                <div id="flashcard" class="flashcard w-full h-full">
-                                    <div id="flashcard-front" class="flashcard-face flashcard-front"></div>
-                                    <div id="flashcard-back" class="flashcard-face flashcard-back"></div>
+
+                    <!-- 4. Flashcards View -->
+                    <div id="flashcards-view" class="view hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex items-center">
+                                <span class="material-icons-round text-blue-400 mr-3 text-3xl">style</span>
+                                <h1 class="text-3xl font-bold text-gray-100">Flashcards</h1>
+                            </div>
+                            <button id="generate-more-flashcards-btn" class="btn-secondary">
+                                <span class="material-icons-round mr-1">add</span>
+                                Generate More Flashcards
+                            </button>
+                        </div>
+                        <div class="card">
+                            <div id="flashcards-display-area" class="hidden">
+                                <div class="flashcard-container relative mx-auto"
+                                    style="height: 300px; max-width: 600px;">
+                                    <div id="flashcard" class="flashcard w-full h-full">
+                                        <div id="flashcard-front" class="flashcard-face flashcard-front"></div>
+                                        <div id="flashcard-back" class="flashcard-face flashcard-back"></div>
+                                    </div>
+                                </div>
+                                <div class="flex justify-center items-center gap-6 mt-8">
+                                    <button id="prev-card-btn" class="btn-icon" disabled>
+                                        <span class="material-icons-round">arrow_back</span>
+                                    </button>
+                                    <button id="flip-card-btn" class="btn-primary">
+                                        <span class="material-icons-round mr-1">flip</span>
+                                        Flip Card
+                                    </button>
+                                    <button id="next-card-btn" class="btn-icon" disabled>
+                                        <span class="material-icons-round">arrow_forward</span>
+                                    </button>
+                                </div>
+                                <div id="card-counter" class="text-center mt-4 text-gray-400 text-sm"></div>
+                            </div>
+                            <div id="flashcards-empty-state"></div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Mind Map View -->
+                    <div id="mindmap-view" class="view hidden">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="flex items-center">
+                                <span class="material-icons-round text-blue-400 mr-3 text-3xl">account_tree</span>
+                                <h1 class="text-3xl font-bold text-gray-100">Mind Map</h1>
+                            </div>
+                            <div class="flex space-x-2"> <!-- Added flex container for buttons -->
+                                <button id="mindmap-fullscreen-btn" class="btn-secondary" title="View Fullscreen">
+                                    <span class="material-icons-round">fullscreen</span>
+                                </button>
+                                <button id="generate-mindmap-btn" class="btn-secondary">
+                                    <span class="material-icons-round mr-1">auto_awesome</span>
+                                    Generate Mind Map
+                                </button>
+                            </div>
+                        </div>
+                        <div id="mindmap-card" class="card flex flex-col relative">
+                            <!-- Exit Fullscreen Button (positioned absolutely) -->
+                            <button id="mindmap-exit-fullscreen-btn"
+                                class="btn-secondary absolute top-4 right-4 z-20 hidden" title="Exit Fullscreen">
+                                <span class="material-icons-round">fullscreen_exit</span>
+                            </button>
+                            <!-- Mindmap Container -->
+                            <div id="mindmap-empty-state"></div>
+                            <div id="mindmap-container"
+                                class="flex-grow flex justify-center items-center overflow-auto p-4 min-h-[600px] hidden">
+                            </div>
+                            <div id="mindmap-error"
+                                class="mt-4 p-4 rounded-lg bg-red-900 border border-red-700 text-red-200 hidden">
+                                <div class="flex items-start">
+                                    <span class="material-icons-round mr-2">error</span>
+                                    <div></div>
                                 </div>
                             </div>
-                            <div class="flex justify-center items-center gap-6 mt-8">
-                                <button id="prev-card-btn" class="btn-icon" disabled>
-                                    <span class="material-icons-round">arrow_back</span>
-                                </button>
-                                <button id="flip-card-btn" class="btn-primary">
-                                    <span class="material-icons-round mr-1">flip</span>
-                                    Flip Card
-                                </button>
-                                <button id="next-card-btn" class="btn-icon" disabled>
-                                    <span class="material-icons-round">arrow_forward</span>
-                                </button>
-                            </div>
-                            <div id="card-counter" class="text-center mt-4 text-gray-400 text-sm"></div>
-                        </div>
-                        <div id="no-flashcards-message" class="py-16 text-center">
-                            <span class="material-icons-round text-gray-500 text-5xl mb-4">style</span>
-                            <p class="text-gray-500 italic">Flashcards will appear here once generated.</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- 5. Mind Map View -->
-                <div id="mindmap-view" class="view hidden">
-                    <div class="flex justify-between items-center mb-6">
-                        <div class="flex items-center">
-                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">account_tree</span>
-                            <h1 class="text-3xl font-bold text-gray-100">Mind Map</h1>
+                    <!-- 6. Chat View -->
+                    <div id="chat-view" class="view hidden">
+                        <div class="flex items-center mb-6">
+                            <span class="material-icons-round text-blue-400 mr-3 text-3xl">chat</span>
+                            <h1 class="text-3xl font-bold text-gray-100">Chat with Your Content</h1>
                         </div>
-                        <div class="flex space-x-2"> <!-- Added flex container for buttons -->
-                            <button id="mindmap-fullscreen-btn" class="btn-secondary" title="View Fullscreen">
-                                <span class="material-icons-round">fullscreen</span>
-                            </button>
-                            <button id="generate-mindmap-btn" class="btn-secondary">
-                                <span class="material-icons-round mr-1">auto_awesome</span>
-                                Generate Mind Map
-                            </button>
-                        </div>
-                    </div>
-                    <div id="mindmap-card" class="card flex flex-col relative">
-                        <!-- Exit Fullscreen Button (positioned absolutely) -->
-                        <button id="mindmap-exit-fullscreen-btn"
-                            class="btn-secondary absolute top-4 right-4 z-20 hidden" title="Exit Fullscreen">
-                            <span class="material-icons-round">fullscreen_exit</span>
-                        </button>
-                        <!-- Mindmap Container -->
-                        <div id="mindmap-container"
-                            class="flex-grow flex justify-center items-center overflow-auto p-4 min-h-[600px]">
-                            <!-- Added min-height here instead -->
-                            <div class="text-center">
-                                <span class="material-icons-round text-gray-500 text-5xl mb-4">account_tree</span>
-                                <p id="mindmap-placeholder" class="text-gray-500 italic">Mind map will appear here once
-                                    generated.</p>
+                        <div class="card">
+                            <div id="chat-history"
+                                class="mb-4 h-96 overflow-y-auto border border-gray-700 rounded-lg bg-gray-800 p-4 text-sm space-y-4">
+                                <div class="text-center py-16">
+                                    <span class="material-icons-round text-gray-500 text-5xl mb-4">chat</span>
+                                    <p class="text-gray-500 italic">Chat history will appear here.</p>
+                                </div>
                             </div>
-                        </div>
-                        <div id="mindmap-error"
-                            class="mt-4 p-4 rounded-lg bg-red-900 border border-red-700 text-red-200 hidden">
-                            <div class="flex items-start">
-                                <span class="material-icons-round mr-2">error</span>
-                                <div></div>
+                            <div class="flex items-center gap-2 border-t border-gray-700 pt-4">
+                                <textarea id="chat-input" placeholder="Ask a question about the content..." rows="2"
+                                    class="chat-input"></textarea>
+                                <button id="send-message-btn" class="btn-send">
+                                    <span class="material-icons-round">send</span>
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- 6. Chat View -->
-                <div id="chat-view" class="view hidden">
-                    <div class="flex items-center mb-6">
-                        <span class="material-icons-round text-blue-400 mr-3 text-3xl">chat</span>
-                        <h1 class="text-3xl font-bold text-gray-100">Chat with Your Content</h1>
-                    </div>
-                    <div class="card">
-                        <div id="chat-history"
-                            class="mb-4 h-96 overflow-y-auto border border-gray-700 rounded-lg bg-gray-800 p-4 text-sm space-y-4">
-                            <div class="text-center py-16">
-                                <span class="material-icons-round text-gray-500 text-5xl mb-4">chat</span>
-                                <p class="text-gray-500 italic">Chat history will appear here.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2 border-t border-gray-700 pt-4">
-                            <textarea id="chat-input" placeholder="Ask a question about the content..." rows="2"
-                                class="chat-input"></textarea>
-                            <button id="send-message-btn" class="btn-send">
-                                <span class="material-icons-round">send</span>
-                            </button>
-                        </div>
-                    </div>
                 </div>
-
             </div>
         </div>
-    </div>
 
-    <!-- Scripts -->
-    <script>
-        // Pass backend flags/data to JS if needed
-        // const API_KEY_SET = {{ api_key_set | tojson }};
-    </script>
-    <script src="/static/js/main.js"></script>
+        <!-- Scripts -->
+        <script>
+            // Pass backend flags/data to JS if needed
+            // const API_KEY_SET = {{ api_key_set | tojson }};
+        </script>
+        <script src="/static/js/main.js"></script>
 </body>
 
 </html>
