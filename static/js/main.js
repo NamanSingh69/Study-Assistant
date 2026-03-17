@@ -66,10 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const filesInput = document.getElementById('files-input');
     const fileInputLabel = document.getElementById('file-input-label');
     const selectedFilesDiv = document.getElementById('selected-files');
-    const webSearchToggle = document.getElementById('web-search-toggle');
-    const generateQuizToggle = document.getElementById('generate-quiz-toggle');
-    const generateFlashcardsToggle = document.getElementById('generate-flashcards-toggle');
-    const generateMindmapToggle = document.getElementById('generate-mindmap-toggle');
+    const webSearchToggle = { checked: true };   // Always enabled — DuckDuckGo requires no API key
+    const generateQuizToggle = { checked: true };  // Always generate all features by default
+    const generateFlashcardsToggle = { checked: true };
+    const generateMindmapToggle = { checked: true };
     const processContentBtn = document.getElementById('process-content-btn');
     const processingWarningsDiv = document.getElementById('processing-warnings');
     const processingErrorsDiv = document.getElementById('processing-errors');
@@ -857,50 +857,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Input View: Mode Toggles
-        const modeProBtn = document.getElementById('mode-pro');
-        const modeFastBtn = document.getElementById('mode-fast');
-        const modelSelect = document.getElementById('model-select');
 
-        if (modeProBtn && modeFastBtn && modelSelect) {
-            const updateModeUI = (mode) => {
-                appState.preferences.agentMode = mode;
-                savePreferences();
-                if (mode === 'pro') {
-                    modeProBtn.classList.replace('bg-gray-700', 'bg-blue-600');
-                    modeProBtn.classList.replace('text-gray-300', 'text-white');
-                    modeProBtn.classList.replace('border-gray-600', 'border-transparent');
-
-                    modeFastBtn.classList.replace('bg-blue-600', 'bg-gray-700');
-                    modeFastBtn.classList.replace('text-white', 'text-gray-300');
-                    modeFastBtn.classList.replace('border-transparent', 'border-gray-600');
-
-                    modelSelect.innerHTML = '<option value="gemini-2.5-pro">Gemini 2.5 Pro</option><option value="gemini-3.1-pro-preview">Gemini 3.1 Pro</option>';
-                } else {
-                    modeFastBtn.classList.replace('bg-gray-700', 'bg-blue-600');
-                    modeFastBtn.classList.replace('text-gray-300', 'text-white');
-                    modeFastBtn.classList.replace('border-gray-600', 'border-transparent');
-
-                    modeProBtn.classList.replace('bg-blue-600', 'bg-gray-700');
-                    modeProBtn.classList.replace('text-white', 'text-gray-300');
-                    modeProBtn.classList.replace('border-transparent', 'border-gray-600');
-
-                    modelSelect.innerHTML = '<option value="gemini-2.5-flash">Gemini 2.5 Flash</option><option value="gemini-2.5-flash-8b">Gemini 2.5 Flash-8B</option>';
-                }
-                updateQuotaDisplay();
-            };
-
-            modeProBtn.addEventListener('click', () => updateModeUI('pro'));
-            modeFastBtn.addEventListener('click', () => updateModeUI('fast'));
-
-            // Set initial state
-            updateModeUI(appState.preferences.agentMode || 'pro');
-
-            // Re-render quota on model change (e.g., if changing from flash to flash-8b)
-            modelSelect.addEventListener('change', () => {
-                updateQuotaDisplay();
-            });
-        }
 
         // Input View: Drag and Drop
         setupDragAndDrop();
@@ -1113,10 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
             defaultHeaders['X-Gemini-Api-Key'] = customApiKey;
         }
 
-        const customModel = document.getElementById('model-select')?.value;
-        if (customModel) {
-            defaultHeaders['X-Gemini-Model-Name'] = customModel;
-        }
+
 
         const config = {
             ...options,

@@ -35,63 +35,90 @@ def init_app():
 
 app = init_app()
 
-# Model fallback cascade — best quality first, faster fallback on error
-MODEL_CASCADE = [
-    "gemini-2.5-pro",
+# Static emergency fallback if API discovery completely fails
+_FALLBACK_CASCADE = [
+    "gemini-3.1-flash-lite-preview",
+    "gemini-3.1-pro-preview",
     "gemini-2.5-flash",
-    "gemini-flash-latest",
+    "gemini-2.5-pro",
 ]
+
+# Exclude non-text models by keyword
+_EXCLUDED_MODEL_KEYWORDS = [
+    "embedding", "aqa", "vision", "image", "imagen",
+    "text-bison", "code-bison", "gecko"
+]
+
+def _score_model(name):
+    """Score models so flash-lite > flash > pro for the default cascade."""
+    n = name.lower()
+    # Base tier score (higher = preferred for fast, reliable generation)
+    if "flash-lite" in n: tier = 40
+    elif "flash" in n:    tier = 30
+    elif "pro" in n:      tier = 20
+    else:                  tier = 10
+    # Version bonus: newer versions preferred
+    import re
+    m = re.search(r'(\d+)\.(\d+)', n)
+    ver = (int(m.group(1)) * 10 + int(m.group(2))) if m else 0
+    return tier + ver
+
+def discover_text_models():
+    """Query the Gemini API and return all text-to-text models sorted by preference."""
+    try:
+        all_models = list(genai.list_models())
+        text_models = []
+        for m in all_models:
+            name = m.name.replace("models/", "")
+            # Must support text generation
+            if "generateContent" not in (m.supported_generation_methods or []):
+                continue
+            # Skip non-text-to-text models
+            if any(kw in name.lower() for kw in _EXCLUDED_MODEL_KEYWORDS):
+                continue
+            text_models.append(name)
+        # Sort: best tier + newest version first
+        text_models.sort(key=_score_model, reverse=True)
+        print(f"\u2705 Discovered {len(text_models)} text-to-text models: {text_models[:6]}...")
+        return text_models if text_models else _FALLBACK_CASCADE
+    except Exception as e:
+        print(f"\u26a0\ufe0f  Model discovery failed: {e}. Using static fallback cascade.")
+        return _FALLBACK_CASCADE
 
 # --- API Configuration ---
 def configure_api():
     """Configure Gemini API with dynamic model discovery.
-    
-    Queries the API to discover all available models and auto-selects the best.
-    Falls back to a static cascade if discovery fails.
-    Get your free API key at: https://aistudio.google.com/app/apikey
+    - Supports GEMINI_API_KEY or GOOGLE_API_KEY env vars.
+    - Auto-discovers all text-to-text models from the API.
+    - Cascades through available models (flash-lite → flash → pro).
     """
-    # Use API key strictly from environment variable
-    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-    SEARCH_ENGINE_ID = os.environ.get("SEARCH_ENGINE_ID")
+    GOOGLE_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
     if not GOOGLE_API_KEY:
-        print("Warning: GOOGLE_API_KEY not set.")
-
-    if not SEARCH_ENGINE_ID:
-        print("Warning: SEARCH_ENGINE_ID environment variable is not set. Web search will be disabled.")
-
-    if GOOGLE_API_KEY:
+        print("Warning: GEMINI_API_KEY / GOOGLE_API_KEY not set.")
+    else:
         genai.configure(api_key=GOOGLE_API_KEY)
 
-    # Try dynamic model discovery first
-    try:
-        from gemini_model_resolver import get_best_model
-        model = get_best_model(preferred_tier="pro")
-        print(f"✅ Dynamic model discovery: {model.model_name}")
-        return model, genai, SEARCH_ENGINE_ID
-    except ImportError:
-        print("ℹ️  gemini_model_resolver not found, using static cascade")
-    except Exception as e:
-        print(f"⚠️  Dynamic discovery failed: {e}. Using static cascade.")
+    # Auto-discover text models from the API
+    model_cascade = discover_text_models()
 
-    # Static fallback cascade
-    for model_name in MODEL_CASCADE:
+    for model_name in model_cascade:
         try:
-            model = genai.GenerativeModel(model_name)
-            model.count_tokens("test")
-            print(f"✅ Gemini model initialized: {model_name}")
-            return model, genai, SEARCH_ENGINE_ID
+            mdl = genai.GenerativeModel(model_name)
+            mdl.count_tokens("test")
+            print(f"\u2705 Using model: {model_name}")
+            return mdl, genai, model_cascade
         except Exception as e:
-            print(f"⚠️  Model {model_name} unavailable: {e}. Trying next...")
+            print(f"\u26a0\ufe0f  {model_name} failed: {e}. Trying next...")
 
-    # Final fallback
-    fallback = MODEL_CASCADE[-1]
-    print(f"⚠️  Using fallback model: {fallback}")
-    return genai.GenerativeModel(fallback), genai, SEARCH_ENGINE_ID
+    # Absolute last resort
+    fallback = _FALLBACK_CASCADE[-1]
+    print(f"\u26a0\ufe0f  All models failed. Using: {fallback}")
+    return genai.GenerativeModel(fallback), genai, _FALLBACK_CASCADE
 
-model, genai_api, SEARCH_ENGINE_ID = configure_api()
+model, genai_api, AVAILABLE_MODELS = configure_api()
 
-# --- Web Search Helper Functions (Keep as is, but check SEARCH_ENGINE_ID usage) ---
+# --- Web Search Helper Functions ---
 def create_http_session():
     session = requests.Session()
     retries = Retry(
@@ -104,28 +131,51 @@ def create_http_session():
     return session
 
 def search_web(query, num_results=5):
-    """Search with retries and better error handling"""
-    if not SEARCH_ENGINE_ID or not os.environ.get("GOOGLE_API_KEY"):
-        print("Warning: Web search disabled. Missing GOOGLE_API_KEY or SEARCH_ENGINE_ID.")
-        return []
-    url = "https://www.googleapis.com/customsearch/v1"
-    params = {
-        "key": os.environ.get("GOOGLE_API_KEY"),
-        "cx": SEARCH_ENGINE_ID,
-        "q": query,
-        "num": num_results,
-    }
-
-    session = create_http_session()
+    """Search using DuckDuckGo HTML parser — no API key required."""
+    results = []
     try:
-        response = session.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        results = response.json()
-        # Return link and snippet for better context
-        return [{"link": item['link'], "snippet": item.get('snippet', '')} for item in results.get('items', [])]
+        search_url = "https://html.duckduckgo.com/html/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        }
+        data = {"q": query}
+        session = create_http_session()
+        response = session.post(search_url, data=data, headers=headers, timeout=15)
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            result_elements = soup.find_all('div', class_='result')
+
+            for item in result_elements:
+                title_elem = item.find('a', class_='result__url')
+                snippet_elem = item.find('a', class_='result__snippet')
+
+                if title_elem and snippet_elem:
+                    title = title_elem.text.strip()
+                    raw_url = title_elem.get('href', '')
+
+                    # Unwrap DuckDuckGo redirect URLs
+                    if raw_url.startswith('//duckduckgo.com/l/?'):
+                        parsed = parse_qs(urlparse(raw_url).query)
+                        real_url = parsed.get('uddg', [raw_url])[0]
+                    else:
+                        real_url = raw_url
+
+                    snippet = snippet_elem.text.strip()
+                    results.append({"link": real_url, "snippet": snippet, "title": title})
+
+                    if len(results) >= num_results:
+                        break
+        else:
+            print(f"DuckDuckGo search returned status: {response.status_code}")
+
     except Exception as e:
-        print(f"Search error: {str(e)}")
-        return []
+        print(f"DuckDuckGo search error: {str(e)}")
+
+    if not results:
+        print(f"No DuckDuckGo results found for: {query}")
+    return results
 
 def fetch_page_content(url):
     """Fetch content with better headers and timeout handling"""
@@ -675,7 +725,7 @@ def process_content(content_items, topic=None, description=None, web_search=True
     # Generate queries based on available text (user context + extracted text)
     # Now combined_text_for_prompt is guaranteed to exist
     context_for_search_query = user_context_prompt + combined_text_for_prompt
-    if web_search and SEARCH_ENGINE_ID and context_for_search_query.strip(): # Check if context is not empty
+    if web_search and context_for_search_query.strip(): # DuckDuckGo search - no API key needed
         print("Web search enabled. Generating queries...")
         search_queries = generate_search_queries(context_for_search_query, num_queries=3)
         print(f"Generated queries: {search_queries}")
@@ -1244,7 +1294,7 @@ def chat_with_content(notes, original_text, chat_history, user_message, web_sear
     web_context_for_prompt = ""
     web_sources_list = []
     # Only perform web search if context exists and search is enabled
-    if (chat_notes_snippet or chat_original_text_snippet) and web_search_enabled and SEARCH_ENGINE_ID:
+    if (chat_notes_snippet or chat_original_text_snippet) and web_search_enabled:
         print("Chat: Web search enabled. Generating queries...")
         try:
             query_context = f"User question: {user_message}\n\nRelevant notes context:\n{chat_notes_snippet[:1000]}"
@@ -1622,10 +1672,10 @@ def health_check():
 
 @app.route('/api/models', methods=['GET'])
 def get_models():
+    """Return the auto-discovered text-to-text model list (filtered at startup)."""
     try:
-        models = [m for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        model_list = [{"name": m.name, "displayName": getattr(m, 'display_name', m.name), "version": getattr(m, 'version', 'unknown')} for m in models]
-        return jsonify({"models": model_list})
+        model_list = [{"name": name, "displayName": name} for name in AVAILABLE_MODELS]
+        return jsonify({"models": model_list, "default": AVAILABLE_MODELS[0] if AVAILABLE_MODELS else None})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

@@ -31,9 +31,10 @@
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--surface-2);
-  background-image: linear-gradient(rgba(5, 5, 16, 0.85), rgba(5, 5, 16, 0.95)), url('/static/bg.png');
-  background-size: cover;
-  background-position: center;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(99, 102, 241, 0.08), transparent),
+    linear-gradient(rgba(5, 5, 16, 0.85), rgba(5, 5, 16, 0.95));
   background-attachment: fixed;
   color: var(--text-2);
   line-height: 1.6;
@@ -164,13 +165,13 @@ body {
 
 /* View transition */
 .view {
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn 0.4s ease-out;
 }
 
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
 
   to {
@@ -366,6 +367,19 @@ body {
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Animated gradient shimmer on the primary CTA */
+.btn-primary:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary), #6366f1, var(--primary-hover));
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .btn-secondary {
