@@ -534,7 +534,9 @@
         <script>
             // Pass backend flags/data to JS if needed
             // const API_KEY_SET = {{ api_key_set | tojson }};
+            window.GEMINI_CONFIG = { needsRealTimeData: false };
         </script>
+        <script src="/static/js/gemini-client.js"></script>
         <script src="/static/js/main.js"></script>
 </body>
 
