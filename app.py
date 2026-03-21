@@ -665,7 +665,7 @@ def process_content(content_items, topic=None, description=None, web_search=True
     Process mixed content sources (text, file objects), user topic/desc,
     and generate enhanced notes using direct multimodal input.
     """
-    if not content_items and not (topic and description):
+    if not content_items and not (topic or description):
          return {"error": "No content provided (URLs, files, or topic/description)."}
 
     # Separate text content from file objects for prompt construction and original text aggregation
@@ -706,7 +706,7 @@ def process_content(content_items, topic=None, description=None, web_search=True
     # Combine only the textual original content
     combined_original_text = "\n\n---\n\n".join(original_text_sources)
 
-    if not text_contents and not file_objects and not (topic and description):
+    if not text_contents and not file_objects and not (topic or description):
         return {"error": "No processable content found after initial filtering."}
 
     # --- Build Prompt for Notes Generation (Multimodal) ---
@@ -819,13 +819,39 @@ def process_content(content_items, topic=None, description=None, web_search=True
         notes_prompt_parts.append(web_source_listing_for_prompt)
 
 
-    # --- API Call ---
+    # --- API Call with Runtime Fallback Cascade ---
     try:
-        notes_generation_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
-        notes_response = notes_generation_model.generate_content(
-            notes_prompt_parts,
-            request_options={"timeout": 600}
-            )
+        requested_model = getattr(g, 'gemini_model_name', model.model_name)
+        models_to_try = [requested_model]
+        
+        # Append remaining models as fallbacks
+        for m in AVAILABLE_MODELS:
+            if m != requested_model:
+                models_to_try.append(m)
+
+        notes_response = None
+        last_error = None
+        
+        for m_name in models_to_try:
+            try:
+                print(f"Attempting Notes generation with model: {m_name}")
+                notes_generation_model = genai.GenerativeModel(m_name)
+                notes_response = notes_generation_model.generate_content(
+                    notes_prompt_parts,
+                    request_options={"timeout": 600}
+                )
+                break # Success!
+            except Exception as e:
+                last_error = e
+                error_str = str(e).lower()
+                if "429" in error_str or "quota" in error_str or "exhausted" in error_str:
+                    print(f"Warning: Model {m_name} hit quota/rate limit. Falling back...")
+                    continue # Try the next model in the cascade
+                else:
+                    raise # Rethrow non-quota errors immediately
+                    
+        if not notes_response:
+            raise Exception(f"All models in fallback cascade failed. Last error: {str(last_error)}")
 
         # --- Response Handling (same as before) ---
         notes_text = ""
