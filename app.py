@@ -1692,7 +1692,13 @@ Generate ONLY the valid Mermaid syntax based on the context provided above.
         if "429" in str(e): return {"error": "Rate limit exceeded during mind map generation."}
         return {"error": f"Failed to generate mind map: {str(e)}"}
 
-from flask import g
+from flask import g, render_template
+
+# --- Root Route: Serve SPA ---
+@app.route('/')
+def index():
+    api_key_set = bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+    return render_template('index.html', api_key_set=api_key_set)
 
 # --- API Routes (Stateless) ---
 @app.route('/health')

@@ -870,6 +870,9 @@ document.addEventListener('DOMContentLoaded', () => {
             input.addEventListener('input', updateProcessButtonState);
         });
 
+        // Input View: Process Content Button
+        processContentBtn.addEventListener('click', handleProcessContent);
+
         // Notes View: Download Button
         downloadNotesBtn.addEventListener('click', handleDownloadNotes);
 
