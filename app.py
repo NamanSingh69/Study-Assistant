@@ -37,10 +37,10 @@ app = init_app()
 
 # Static emergency fallback if API discovery completely fails
 _FALLBACK_CASCADE = [
-    "gemini-3.1-flash-lite-preview",
     "gemini-3.1-pro-preview",
-    "gemini-2.5-flash",
+    "gemini-3.1-flash-lite-preview",
     "gemini-2.5-pro",
+    "gemini-2.5-flash",
 ]
 
 # Exclude non-text models by keyword
@@ -50,18 +50,46 @@ _EXCLUDED_MODEL_KEYWORDS = [
 ]
 
 def _score_model(name):
-    """Score models so flash-lite > flash > pro for the default cascade."""
+    """
+    Score models to prioritize: pro > flash > flash-lite.
+    Handles semantic versions, dates, preview, and experimental tags.
+    """
     n = name.lower()
-    # Base tier score (higher = preferred for fast, reliable generation)
-    if "flash-lite" in n: tier = 40
-    elif "flash" in n:    tier = 30
-    elif "pro" in n:      tier = 20
-    else:                  tier = 10
-    # Version bonus: newer versions preferred
+    score = 0
+    
+    # 1. Base Tier Priority (Pro > Flash > Flash-Lite)
+    if "pro" in n:
+        score += 300000
+    elif "flash-lite" in n:
+        score += 100000
+    elif "flash" in n:
+        score += 200000
+    else:
+        score += 0
+        
+    # 2. Version Number (e.g., 3.1, 2.5, 1.5)
     import re
     m = re.search(r'(\d+)\.(\d+)', n)
-    ver = (int(m.group(1)) * 10 + int(m.group(2))) if m else 0
-    return tier + ver
+    if m:
+        major = int(m.group(1))
+        minor = int(m.group(2))
+        score += (major * 10000) + (minor * 1000)
+        
+    # 3. Model State / Stability
+    # experimental is actively penalized to avoid unstable builds unless explicitly requested
+    if "exp" in n or "experimental" in n:
+        score -= 500
+    elif "preview" in n:
+        score += 50  # slightly prioritize preview to get the latest features if versions match
+        
+    # 4. Date Tie-Breaker (e.g., -0215, -20240827)
+    date_match = re.search(r'-(\d{4,8})', n)
+    if date_match:
+        # modulo to ensure date digits don't overflow the version/tier scale
+        val = int(date_match.group(1))
+        score += (val % 500)
+    
+    return score
 
 def discover_text_models():
     """Query the Gemini API and return all text-to-text models sorted by preference."""
@@ -70,28 +98,28 @@ def discover_text_models():
         text_models = []
         for m in all_models:
             name = m.name.replace("models/", "")
+            
             # Must support text generation
             if "generateContent" not in (m.supported_generation_methods or []):
                 continue
+            
             # Skip non-text-to-text models
             if any(kw in name.lower() for kw in _EXCLUDED_MODEL_KEYWORDS):
                 continue
+                
             text_models.append(name)
+            
         # Sort: best tier + newest version first
         text_models.sort(key=_score_model, reverse=True)
-        print(f"\u2705 Discovered {len(text_models)} text-to-text models: {text_models[:6]}...")
+        print(f"\u2705 Discovered {len(text_models)} text models. Top 3 prioritized: {text_models[:3]}")
         return text_models if text_models else _FALLBACK_CASCADE
     except Exception as e:
-        print(f"\u26a0\ufe0f  Model discovery failed: {e}. Using static fallback cascade.")
+        print(f"\u26a0\ufe0f Model discovery failed: {e}. Using static fallback cascade.")
         return _FALLBACK_CASCADE
 
 # --- API Configuration ---
 def configure_api():
-    """Configure Gemini API with dynamic model discovery.
-    - Supports GEMINI_API_KEY or GOOGLE_API_KEY env vars.
-    - Auto-discovers all text-to-text models from the API.
-    - Cascades through available models (flash-lite → flash → pro).
-    """
+    """Configure Gemini API with dynamic model discovery and validation."""
     GOOGLE_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
 
     if not GOOGLE_API_KEY:
@@ -105,15 +133,16 @@ def configure_api():
     for model_name in model_cascade:
         try:
             mdl = genai.GenerativeModel(model_name)
+            # Perform a lightweight validation test (fails if model is gated/deprecated)
             mdl.count_tokens("test")
-            print(f"\u2705 Using model: {model_name}")
+            print(f"\u2705 Successfully initialized model: {model_name}")
             return mdl, genai, model_cascade
         except Exception as e:
-            print(f"\u26a0\ufe0f  {model_name} failed: {e}. Trying next...")
+            print(f"\u26a0\ufe0f {model_name} failed: {e}. Trying next...")
 
     # Absolute last resort
     fallback = _FALLBACK_CASCADE[-1]
-    print(f"\u26a0\ufe0f  All models failed. Using: {fallback}")
+    print(f"\u26a0\ufe0f All models failed. Using absolute fallback: {fallback}")
     return genai.GenerativeModel(fallback), genai, _FALLBACK_CASCADE
 
 model, genai_api, AVAILABLE_MODELS = configure_api()
