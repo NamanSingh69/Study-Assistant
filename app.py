@@ -35,117 +35,20 @@ def init_app():
 
 app = init_app()
 
-# Static emergency fallback if API discovery completely fails
-_FALLBACK_CASCADE = [
-    "gemini-3.1-pro-preview",
-    "gemini-3.1-flash-lite-preview",
-    "gemini-2.5-pro",
-    "gemini-2.5-flash",
-]
+# --- Integrated User Model Resolver ---
+import gemini_model_resolver
 
-# Exclude non-text models by keyword
-_EXCLUDED_MODEL_KEYWORDS = [
-    "embedding", "aqa", "vision", "image", "imagen",
-    "text-bison", "code-bison", "gecko"
-]
+GOOGLE_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
 
-def _score_model(name):
-    """
-    Score models to prioritize: pro > flash > flash-lite.
-    Handles semantic versions, dates, preview, and experimental tags.
-    """
-    n = name.lower()
-    score = 0
-    
-    # 1. Base Tier Priority (Pro > Flash > Flash-Lite)
-    if "pro" in n:
-        score += 300000
-    elif "flash-lite" in n:
-        score += 100000
-    elif "flash" in n:
-        score += 200000
-    else:
-        score += 0
-        
-    # 2. Version Number (e.g., 3.1, 2.5, 1.5)
-    import re
-    m = re.search(r'(\d+)\.(\d+)', n)
-    if m:
-        major = int(m.group(1))
-        minor = int(m.group(2))
-        score += (major * 10000) + (minor * 1000)
-        
-    # 3. Model State / Stability
-    # experimental is actively penalized to avoid unstable builds unless explicitly requested
-    if "exp" in n or "experimental" in n:
-        score -= 500
-    elif "preview" in n:
-        score += 50  # slightly prioritize preview to get the latest features if versions match
-        
-    # 4. Date Tie-Breaker (e.g., -0215, -20240827)
-    date_match = re.search(r'-(\d{4,8})', n)
-    if date_match:
-        # modulo to ensure date digits don't overflow the version/tier scale
-        val = int(date_match.group(1))
-        score += (val % 500)
-    
-    return score
+model = gemini_model_resolver.get_best_model(api_key=GOOGLE_API_KEY)
+genai_api = genai
+AVAILABLE_MODELS = gemini_model_resolver.discover_models()
 
-def discover_text_models():
-    """Query the Gemini API and return all text-to-text models sorted by preference."""
-    try:
-        all_models = list(genai.list_models())
-        text_models = []
-        for m in all_models:
-            name = m.name.replace("models/", "")
-            
-            # Must support text generation
-            if "generateContent" not in (m.supported_generation_methods or []):
-                continue
-            
-            # Skip non-text-to-text models
-            if any(kw in name.lower() for kw in _EXCLUDED_MODEL_KEYWORDS):
-                continue
-                
-            text_models.append(name)
-            
-        # Sort: best tier + newest version first
-        text_models.sort(key=_score_model, reverse=True)
-        print(f"\u2705 Discovered {len(text_models)} text models. Top 3 prioritized: {text_models[:3]}")
-        return text_models if text_models else _FALLBACK_CASCADE
-    except Exception as e:
-        print(f"\u26a0\ufe0f Model discovery failed: {e}. Using static fallback cascade.")
-        return _FALLBACK_CASCADE
-
-# --- API Configuration ---
-def configure_api():
-    """Configure Gemini API with dynamic model discovery and validation."""
-    GOOGLE_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-
-    if not GOOGLE_API_KEY:
-        print("Warning: GEMINI_API_KEY / GOOGLE_API_KEY not set.")
-    else:
-        genai.configure(api_key=GOOGLE_API_KEY)
-
-    # Auto-discover text models from the API
-    model_cascade = discover_text_models()
-
-    for model_name in model_cascade:
-        try:
-            mdl = genai.GenerativeModel(model_name)
-            # Perform a lightweight validation test (fails if model is gated/deprecated)
-            mdl.count_tokens("test")
-            print(f"\u2705 Successfully initialized model: {model_name}")
-            return mdl, genai, model_cascade
-        except Exception as e:
-            print(f"\u26a0\ufe0f {model_name} failed: {e}. Trying next...")
-
-    # Absolute last resort
-    fallback = _FALLBACK_CASCADE[-1]
-    print(f"\u26a0\ufe0f All models failed. Using absolute fallback: {fallback}")
-    return genai.GenerativeModel(fallback), genai, _FALLBACK_CASCADE
-
-model, genai_api, AVAILABLE_MODELS = configure_api()
+# Provide a fallback model name property if missing
+if not hasattr(model, 'model_name'):
+    model.model_name = gemini_model_resolver.get_best_model_name(api_key=GOOGLE_API_KEY)
 
 # --- Web Search Helper Functions ---
 def create_http_session():
@@ -844,11 +747,15 @@ def process_content(content_items, topic=None, description=None, web_search=True
             except Exception as e:
                 last_error = e
                 error_str = str(e).lower()
-                if "429" in error_str or "quota" in error_str or "exhausted" in error_str:
-                    print(f"Warning: Model {m_name} hit quota/rate limit. Falling back...")
-                    continue # Try the next model in the cascade
-                else:
-                    raise # Rethrow non-quota errors immediately
+                
+                # Check for critical errors that shouldn't initiate a fallback loop
+                if "api key not valid" in error_str or "unauthenticated" in error_str or "permission" in error_str:
+                    print(f"Critical Authentication Error: {e}")
+                    raise # Rethrow auth errors immediately to stop the cascade
+                
+                # Otherwise, treat it as a recoverable model fault (429, 400 Interactions API, 500, etc.)
+                print(f"Warning: Model {m_name} failed ({e}). Falling back to next model...")
+                continue # Try the next model in the cascade
                     
         if not notes_response:
             raise Exception(f"All models in fallback cascade failed. Last error: {str(last_error)}")
