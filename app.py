@@ -50,6 +50,40 @@ AVAILABLE_MODELS = gemini_model_resolver.discover_models()
 if not hasattr(model, 'model_name'):
     model.model_name = gemini_model_resolver.get_best_model_name(api_key=GOOGLE_API_KEY)
 
+# --- Universal Generation Wrapper ---
+def generate_with_fallback(*args, **kwargs):
+    """Executes Gemini generate_content with a unified fallback cascade for all features."""
+    from flask import g
+    requested_model = getattr(g, 'gemini_model_name', model.model_name)
+    models_to_try = [requested_model]
+    
+    for m in AVAILABLE_MODELS:
+        if m != requested_model:
+            models_to_try.append(m)
+
+    last_error = None
+    system_instruction = kwargs.pop('system_instruction', None)
+
+    for m_name in models_to_try:
+        try:
+            print(f"Executing generation with model: {m_name}")
+            if system_instruction:
+                gen_model = genai.GenerativeModel(model_name=m_name, system_instruction=system_instruction)
+            else:
+                gen_model = genai.GenerativeModel(m_name)
+                
+            response = gen_model.generate_content(*args, **kwargs)
+            return response
+        except Exception as e:
+            last_error = e
+            error_str = str(e).lower()
+            if "api key not valid" in error_str or "unauthenticated" in error_str or "permission" in error_str:
+                raise e # Fatal auth error
+            print(f"Warning: Model {m_name} failed ({e}). Falling back...")
+            continue
+            
+    raise Exception(f"All models in fallback cascade failed. Last error: {str(last_error)}")
+
 # --- Web Search Helper Functions ---
 def create_http_session():
     session = requests.Session()
@@ -722,43 +756,9 @@ def process_content(content_items, topic=None, description=None, web_search=True
         notes_prompt_parts.append(web_source_listing_for_prompt)
 
 
-    # --- API Call with Runtime Fallback Cascade ---
+    # --- API Call with Universal Fallback Cascade ---
     try:
-        requested_model = getattr(g, 'gemini_model_name', model.model_name)
-        models_to_try = [requested_model]
-        
-        # Append remaining models as fallbacks
-        for m in AVAILABLE_MODELS:
-            if m != requested_model:
-                models_to_try.append(m)
-
-        notes_response = None
-        last_error = None
-        
-        for m_name in models_to_try:
-            try:
-                print(f"Attempting Notes generation with model: {m_name}")
-                notes_generation_model = genai.GenerativeModel(m_name)
-                notes_response = notes_generation_model.generate_content(
-                    notes_prompt_parts,
-                    request_options={"timeout": 600}
-                )
-                break # Success!
-            except Exception as e:
-                last_error = e
-                error_str = str(e).lower()
-                
-                # Check for critical errors that shouldn't initiate a fallback loop
-                if "api key not valid" in error_str or "unauthenticated" in error_str or "permission" in error_str:
-                    print(f"Critical Authentication Error: {e}")
-                    raise # Rethrow auth errors immediately to stop the cascade
-                
-                # Otherwise, treat it as a recoverable model fault (429, 400 Interactions API, 500, etc.)
-                print(f"Warning: Model {m_name} failed ({e}). Falling back to next model...")
-                continue # Try the next model in the cascade
-                    
-        if not notes_response:
-            raise Exception(f"All models in fallback cascade failed. Last error: {str(last_error)}")
+        notes_response = generate_with_fallback(notes_prompt_parts, request_options={"timeout": 600})
 
         # --- Response Handling (same as before) ---
         notes_text = ""
@@ -946,8 +946,7 @@ Example MCQ Object (Reflecting Enhanced Guidelines):
 """
     try:
         # Use a model suitable for complex instruction following
-        quiz_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
-        quiz_response = quiz_model.generate_content(quiz_prompt)
+        quiz_response = generate_with_fallback(quiz_prompt)
 
         # Robust response handling (keep existing logic)
         response_text = ""
@@ -1126,8 +1125,7 @@ Return ONLY the valid JSON array `[...]`. Do not include ```json``` markers or a
     # --- End Refined Prompt ---
 
     try:
-        flashcard_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
-        flashcard_response = flashcard_model.generate_content(flashcard_prompt)
+        flashcard_response = generate_with_fallback(flashcard_prompt)
 
         # Robust response handling (keep as is)
         response_text = ""
@@ -1333,19 +1331,15 @@ def chat_with_content(notes, original_text, chat_history, user_message, web_sear
 
     try:
         # Use generate_content with system instruction and history (Keep existing logic)
-        chat_model = genai.GenerativeModel(
-            model_name=getattr(g, 'gemini_model_name', model.model_name), # Or your chosen model
-            system_instruction=system_instruction
-        )
-
         print(f"Sending chat request to generate_content. History length: {len(full_history_for_api)}")
         # print(f"System Instruction Snippet: {system_instruction[:500]}...") # Debug log more context
 
-        response = chat_model.generate_content(
+        response = generate_with_fallback(
             contents=full_history_for_api,
+            system_instruction=system_instruction,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.7 # Adjust as needed
-            ),
+            )
              # safety_settings=[...] # Optional
         )
 
@@ -1471,8 +1465,7 @@ Example Output:
 Return ONLY the JSON object.
 """
     try:
-        eval_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name)) # Use a capable model
-        eval_response = eval_model.generate_content(eval_prompt)
+        eval_response = generate_with_fallback(eval_prompt)
 
         # Robust response handling
         response_text = ""
@@ -1570,8 +1563,7 @@ Generate ONLY the valid Mermaid syntax based on the context provided above.
 """
     try:
         # Use a model good at structured output
-        mindmap_model = genai.GenerativeModel(getattr(g, 'gemini_model_name', model.model_name))
-        mindmap_response = mindmap_model.generate_content(mindmap_prompt)
+        mindmap_response = generate_with_fallback(mindmap_prompt)
 
        # Robust response handling (keep existing logic)
         response_text = ""
