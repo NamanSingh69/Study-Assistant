@@ -1214,8 +1214,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const descriptionVal = descriptionInput.value.trim();
 
 
-        if (urls.length === 0 && files.length === 0 && (!topicVal || !descriptionVal)) {
-            window.uxManager.toast.show('Please provide URLs, upload files, or enter both a topic and description.', 'error');
+        if (urls.length === 0 && files.length === 0 && !topicVal && !descriptionVal) {
+            window.uxManager.toast.show('Please provide URLs, upload files, or enter a topic or description.', 'error');
             return;
         }
 
