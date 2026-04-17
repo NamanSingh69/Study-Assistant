@@ -1,35 +1,23 @@
 {
     "version": 2,
-    "builds": [
-        {
-            "src": "api/index.py",
-            "use": "@vercel/python"
-        },
-        {
-            "src": "templates/**",
-            "use": "@vercel/static"
-        },
-        {
-            "src": "static/**",
-            "use": "@vercel/static"
-        },
-        {
-            "src": "public/**",
-            "use": "@vercel/static"
+    "functions": {
+        "api/index.py": {
+            "runtime": "@vercel/python@4.5.0",
+            "maxDuration": 120
         }
-    ],
-    "routes": [
+    },
+    "rewrites": [
         {
-            "src": "/static/(.*)",
-            "dest": "/static/$1"
+            "source": "/api/(.*)",
+            "destination": "/api/index.py"
         },
         {
-            "src": "/api/(.*)",
-            "dest": "/api/index.py"
+            "source": "/static/(.*)",
+            "destination": "/static/$1"
         },
         {
-            "src": "/(.*)",
-            "dest": "/templates/index.html"
+            "source": "/(.*)",
+            "destination": "/api/index.py"
         }
     ]
 }

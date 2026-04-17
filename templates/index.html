@@ -5,8 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Study Assistant</title>
-    <!-- Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Tailwind CSS with Typography Plugin -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#7c3aed',
+                    }
+                }
+            }
+        }
+    </script>
     <!-- Google Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <!-- Google Fonts -->
@@ -26,7 +37,8 @@
                 inlineMath: [['$','$'], ['\\(','\\)']],
                 displayMath: [['$$','$$'], ['\\[','\\]']],
                 processEscapes: true,
-                skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+                skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+                preview: "none"
             },
             messageStyle: "none"
         });
@@ -296,27 +308,30 @@
                                 Download
                             </button>
                         </div>
-                        <div id="notes-content-container">
-                            <div id="notes-empty-state"></div>
-                            <div id="notes-content"
-                                class="card prose prose-invert max-w-none academic-technical-style hidden">
-                            </div>
-                        </div>
-                        <!-- Original Content Toggle -->
-                        <div class="mt-6 card">
-                            <button id="toggle-original-content" class="btn-text flex items-center">
-                                <span class="material-icons-round mr-1 text-blue-400">visibility</span>
-                                Show Original Content
-                            </button>
-                            <div id="original-content-container"
-                                class="hidden mt-4 max-h-96 overflow-y-auto text-sm text-gray-400 border-t border-gray-700 pt-4">
-                                <pre class="whitespace-pre-wrap break-words"></pre>
-                            </div>
+                    </div>
+
+                    <div id="notes-content-container">
+                        <div id="notes-empty-state"></div>
+                        <div id="notes-content"
+                            class="card prose prose-invert max-w-none academic-technical-style hidden">
                         </div>
                     </div>
 
-                    <!-- 3. Quiz View -->
-                    <div id="quiz-view" class="view hidden">
+                    <!-- Original Content Toggle -->
+                    <div class="mt-6 card">
+                        <button id="toggle-original-content" class="btn-text flex items-center">
+                            <span class="material-icons-round mr-1 text-blue-400">visibility</span>
+                            Show Original Content
+                        </button>
+                        <div id="original-content-container"
+                            class="hidden mt-4 max-h-96 overflow-y-auto text-sm text-gray-400 border-t border-gray-700 pt-4">
+                            <pre class="whitespace-pre-wrap break-words"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Quiz View -->
+                <div id="quiz-view" class="view hidden">
                         <div class="flex justify-between items-center mb-6">
                             <div class="flex items-center">
                                 <span class="material-icons-round text-blue-400 mr-3 text-3xl">quiz</span>
