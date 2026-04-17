@@ -971,12 +971,13 @@ Example MCQ Object (Reflecting Enhanced Guidelines):
                 return {"error": "Failed to generate quiz: No valid response text found."}
 
         # Clean and parse JSON (keep existing logic)
+        # Clean and parse JSON (keep existing logic + enhanced regex extractor)
         cleaned_text = response_text.strip()
-        if cleaned_text.startswith("```json"):
-            cleaned_text = cleaned_text[7:]
-        if cleaned_text.endswith("```"):
-            cleaned_text = cleaned_text[:-3]
-        cleaned_text = cleaned_text.strip()
+        match = re.search(r'```(?:json)?\s*(.*?)\s*```', cleaned_text, re.DOTALL)
+        if match:
+            cleaned_text = match.group(1).strip()
+        elif cleaned_text.startswith("```"):
+            cleaned_text = cleaned_text.strip("` \n")
 
         # Validate JSON structure before returning (keep existing logic)
         try:
@@ -1151,9 +1152,11 @@ Return ONLY the valid JSON array `[...]`. Do not include ```json``` markers or a
 
         # Clean markdown fences (keep as is)
         cleaned_text = response_text.strip()
-        if cleaned_text.startswith("```json"): cleaned_text = cleaned_text[7:]
-        if cleaned_text.endswith("```"): cleaned_text = cleaned_text[:-3]
-        cleaned_text = cleaned_text.strip()
+        match = re.search(r'```(?:json)?\s*(.*?)\s*```', cleaned_text, re.DOTALL)
+        if match:
+            cleaned_text = match.group(1).strip()
+        elif cleaned_text.startswith("```"):
+            cleaned_text = cleaned_text.strip("` \n")
 
         # --- ADDED: Pre-parsing Regex Fix for common LaTeX escape issues ---
         try:
@@ -1477,9 +1480,11 @@ Return ONLY the JSON object.
 
         # Clean and parse JSON
         cleaned_text = response_text.strip()
-        if cleaned_text.startswith("```json"): cleaned_text = cleaned_text[7:]
-        if cleaned_text.endswith("```"): cleaned_text = cleaned_text[:-3]
-        cleaned_text = cleaned_text.strip()
+        match = re.search(r'```(?:json)?\s*(.*?)\s*```', cleaned_text, re.DOTALL)
+        if match:
+            cleaned_text = match.group(1).strip()
+        elif cleaned_text.startswith("```"):
+            cleaned_text = cleaned_text.strip("` \n")
 
         try:
             evaluation = json.loads(cleaned_text)

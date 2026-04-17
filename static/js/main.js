@@ -658,17 +658,27 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             // 3. Process Markdown
-            marked.setOptions({
-                gfm: true,
-                breaks: true, // Render line breaks as <br>
-                highlight: function (code, lang) {
-                    const language = lang || 'plaintext';
-                    // Ensure proper escaping within the code block
-                    return `<pre><code class="language-${escapeHtml(language)}">${escapeHtml(code)}</code></pre>`;
+            let html;
+            try {
+                if (typeof marked.setOptions === 'function') {
+                    marked.setOptions({
+                        gfm: true,
+                        breaks: true, // Render line breaks as <br>
+                        highlight: function (code, lang) {
+                            const language = lang || 'plaintext';
+                            // Ensure proper escaping within the code block
+                            return `<pre><code class="language-${escapeHtml(language)}">${escapeHtml(code)}</code></pre>`;
+                        }
+                    });
+                } else if (typeof marked.use === 'function') {
+                     // Best effort for newer marked versions without extensions for simplicity here
+                     marked.use({ gfm: true, breaks: true });
                 }
-            });
-
-            let html = marked.parse(text);
+                html = marked.parse(text);
+            } catch (err) {
+                console.warn('Markdown parsing failed or misconfigured, using plain text fallback:', err);
+                html = `<pre class="whitespace-pre-wrap font-sans">${escapeHtml(text)}</pre>`;
+            }
 
             // 4. Restore LaTeX placeholders BEFORE inserting into DOM
             html = html.replace(/%%LATEX_DISPLAY_(\d+)%%/g, (match, index) => {
